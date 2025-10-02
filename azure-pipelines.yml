@@ -1,0 +1,42 @@
+trigger:
+- main   # change this to your branch name
+
+pool:
+  vmImage: 'ubuntu-latest'   # Microsoft-hosted agent
+
+steps:
+# Step 1: Checkout code
+- checkout: self
+
+steps:
+- task: CmdLine@2
+  displayName: 'Run script in a specific directory'
+  inputs:
+    script: |
+      echo "Running from: %CD%"
+      dir # List contents of the current directory
+    workingDirectory: '$(Build.SourcesDirectory)/MyProjectFolder' # Sets the working directory for this task
+
+# Step 2: Install dependencies (example: Node.js project)
+- task: NodeTool@
+  inputs:
+    versionSpec: '20.x'
+  displayName: 'Use Node.js 20.x'
+
+- script: npm install
+  displayName: 'Install dependencies'
+
+# Step 3: Run linter
+- script: npm run lint
+  displayName: 'Run lint'
+
+# Step 4: Build project
+- script: npm run build
+  displayName: 'Build project'
+
+# Step 5: Publish build artifacts
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: 'drop'
+    publishLocation: 'Container'
