@@ -8,7 +8,6 @@ steps:
 # Step 1: Checkout code
 - checkout: self
 
-steps:
 - task: CmdLine@2
   displayName: 'Run script in a specific directory'
   inputs:
