@@ -33,6 +33,13 @@ steps:
 - script: npm run build
   displayName: 'Build project'
 
+- task: CopyFiles@2
+  inputs:
+    contents: '**' # Copies all files and subfolders from the source
+    sourceFolder: '$(System.DefaultWorkingDirectory)/dist' # Path to your dist folder
+    targetFolder: '$(Build.ArtifactStagingDirectory)'
+  displayName: 'Copy dist files to artifact staging directory'
+
 # Step 5: Publish build artifacts
 - task: PublishBuildArtifacts@1
   inputs:
