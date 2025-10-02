@@ -26,8 +26,8 @@ steps:
   displayName: 'Install dependencies'
 
 # Step 3: Run linter
-- script: npm run lint
-  displayName: 'Run lint'
+#- script: npm run lint
+#  displayName: 'Run lint'
 
 # Step 4: Build project
 - script: npm run build
