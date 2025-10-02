@@ -17,7 +17,7 @@ steps:
     workingDirectory: '$(Build.SourcesDirectory)' # Sets the working directory for this task
 
 # Step 2: Install dependencies (example: Node.js project)
-- task: NodeTool@
+- task: NodeTool@0
   inputs:
     versionSpec: '20.x'
   displayName: 'Use Node.js 20.x'
