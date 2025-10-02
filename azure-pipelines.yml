@@ -15,7 +15,7 @@ steps:
     script: |
       echo "Running from: %CD%"
       dir # List contents of the current directory
-    workingDirectory: '$(Build.SourcesDirectory)/MyProjectFolder' # Sets the working directory for this task
+    workingDirectory: '$(Build.SourcesDirectory)' # Sets the working directory for this task
 
 # Step 2: Install dependencies (example: Node.js project)
 - task: NodeTool@
