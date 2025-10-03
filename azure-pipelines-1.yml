@@ -32,9 +32,9 @@ steps:
     archiveFile: '$(Build.ArtifactStagingDirectory)/$(artifactName).zip'
     replaceExistingArchive: true
 
-- task: PublishPipelineArtifact@1
-  displayName: 'Publish artifact'
+- task: PublishBuildArtifacts@1
   inputs:
-    targetPath: '$(Build.ArtifactStagingDirectory)/$(artifactName).zip'
-    artifact: '$(artifactName)'
+    pathToPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: 'backend-drop'
+    publishLocation: 'Container'
 
