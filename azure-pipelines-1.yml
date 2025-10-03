@@ -9,11 +9,12 @@ trigger:
 pool:
   self: default
 
-defaults:
-   run:
-    workingDirectory: backend
-
 steps:
+
+- script: echo "This script runs in the 'backend' directory."
+  displayName: 'Custom Directory Script'
+  workingDirectory: 'backend'
+
 - task: NodeTool@0
   inputs:
     versionSpec: '20.x'
