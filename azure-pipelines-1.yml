@@ -7,7 +7,7 @@ trigger:
 - main
 
 pool:
-  self: default
+  self: officeTechPundit
 
 steps:
 
