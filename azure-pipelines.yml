@@ -2,7 +2,7 @@ trigger:
 - main   # change this to your branch name
 
 pool:
-  vmImage: 'ubuntu-latest'   # Microsoft-hosted agent
+  name: 'Default'   # self-hosted agent
 
 steps:
 # Step 1: Checkout code
