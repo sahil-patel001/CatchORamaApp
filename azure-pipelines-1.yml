@@ -27,6 +27,7 @@ steps:
 
 - script: npm install
   displayName: 'Install dependencies'
+  workingDirectory: '$(Build.SourcesDirectory)/backend'
 
 
 - task: ArchiveFiles@2
