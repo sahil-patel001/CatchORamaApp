@@ -4,7 +4,12 @@
 # https://docs.microsoft.com/azure/devops/pipelines/languages/javascript
 
 trigger:
-- main
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - backend/** # This triggers the pipeline only when ch
 
 pool:
   name: Default
