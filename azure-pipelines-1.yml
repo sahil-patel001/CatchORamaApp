@@ -32,7 +32,7 @@ steps:
 - task: ArchiveFiles@2
   displayName: 'Archive output'
   inputs:
-    rootFolderOrFile: './backend'
+    rootFolderOrFile: '$(Build.SourcesDirectory)/backend'
     includeRootFolder: false
     archiveFile: '$(Build.ArtifactStagingDirectory)/$(artifactName).zip'
     replaceExistingArchive: true
