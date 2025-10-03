@@ -1,6 +1,10 @@
 trigger:
-- main   # change this to your branch name
-
+  branches:
+    include:
+      - main   # change this to your branch name
+  paths:
+    exclude:
+    - backend/**
 pool:
   name: 'Default'   # self-hosted agent
 
@@ -14,7 +18,7 @@ steps:
     script: |
       echo "Running from: %CD%"
       dir # List contents of the current directory
-    workingDirectory: '.' # Sets the working directory for this task
+    workingDirectory: '$(System.DefaultWorkingDirectory)' # Sets the working directory for this task
 
 # Step 2: Install dependencies (example: Node.js project)
 - task: NodeTool@0
