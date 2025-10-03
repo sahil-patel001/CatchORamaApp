@@ -12,13 +12,13 @@ steps:
 # Step 1: Checkout code
 - checkout: self
 
-- task: CmdLine@2
-  displayName: 'Run script in a specific directory'
-  inputs:
-    script: |
-      echo "Running from: %CD%"
-      dir # List contents of the current directory
-    workingDirectory: '$(System.DefaultWorkingDirectory)' # Sets the working directory for this task
+# - task: CmdLine@2
+#   displayName: 'Run script in a specific directory'
+#   inputs:
+#     script: |
+#       echo "Running from: %CD%"
+#       dir # List contents of the current directory
+#     workingDirectory: '$(System.DefaultWorkingDirectory)' # Sets the working directory for this task
 
 # Step 2: Install dependencies (example: Node.js project)
 - task: NodeTool@0
