@@ -1,5 +1,6 @@
 import dotenv from "dotenv";
-import { connectDB } from "../config/database.js";
+import { pathToFileURL } from 'url';
+import { connectDB } from await import(pathToFileURL('../config/database.js'));
 
 // Load environment variables
 dotenv.config();

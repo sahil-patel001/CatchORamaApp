@@ -9,7 +9,8 @@
  */
 
 import mongoose from "mongoose";
-import Vendor from "../models/Vendor.js";
+import { pathToFileURL } from 'url';
+await import(pathToFileURL('../models/Vendor.js'));
 
 /**
  * Generate next available vendor prefix

@@ -11,12 +11,14 @@
  */
 
 import mongoose from "mongoose";
-import Product from "../models/Product.js";
-import Barcode from "../models/Barcode.js";
+import { pathToFileURL } from 'url';
+await import(pathToFileURL('../models/Product.js'));
+await import(pathToFileURL('../models/Barcode.js'));
+await import(pathToFileURL('../models/Vendor.js'));
 import {
   createBarcodeIndexes,
   optimizeBarcodeIndexes,
-} from "../services/barcodeIndexingService.js";
+} from import(pathToFileURL('../services/barcodeIndexingService.js'));
 
 /**
  * Run the migration

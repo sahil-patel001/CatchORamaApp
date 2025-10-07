@@ -11,8 +11,9 @@
  */
 
 import mongoose from "mongoose";
-import Notification from "../models/Notification.js";
-import User from "../models/User.js";
+import { pathToFileURL } from 'url';
+import Notification from await import(pathToFileURL('../models/Notification.js'));
+import User from await import(pathToFileURL('../models/User.js'));
 
 /**
  * Run the migration
