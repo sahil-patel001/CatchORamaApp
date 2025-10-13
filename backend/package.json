@@ -14,7 +14,7 @@
     "seed:fresh": "node seeders/index.js --fresh",
     "fix:categories": "node scripts/fix-category-duplicates.js",
     "test": "node --experimental-vm-modules node_modules/.bin/jest",
-    "migrate": "node scripts/migrate.js up",
+    "migrate": "node -r dotenv/config scripts/migrate.js up",
     "migrate:down": "node scripts/migrate.js down",
     "migrate:status": "node scripts/migrate.js status",
     "migrate:list": "node scripts/migrate.js list",
