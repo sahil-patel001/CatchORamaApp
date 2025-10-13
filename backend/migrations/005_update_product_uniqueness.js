@@ -1,6 +1,7 @@
+import mongoose from "mongoose";
 import dotenv from "dotenv";
-import { pathToFileURL } from 'url';
-import { connectDB } from await import(pathToFileURL('../config/database.js'));
+import { connectDB } from '../config/database.js';
+import Product from '../models/Product.js';
 
 // Load environment variables
 dotenv.config();
@@ -12,15 +13,9 @@ dotenv.config();
  * - Add vendor + category unique constraint on name
  * - Add vendor-specific unique constraint on seo.slug
  */
-const updateProductUniqueness = async () => {
+export const up = async () => {
   try {
     console.log("🔧 Starting product uniqueness migration...");
-
-    // Connect to database
-    await connectDB();
-
-    // Import Product model
-    const Product = (await import("../models/Product.js")).default;
 
     console.log("📋 Checking existing indexes...");
     const indexes = await Product.collection.getIndexes();
@@ -161,7 +156,7 @@ const updateProductUniqueness = async () => {
       hasSlugVendorIndex ? "EXISTS" : "MISSING"
     );
 
-    if (hasNameCategoryIndex && hasSlugVendorIndex) {
+    if (hasNameCategoryIndex || hasSlugVendorIndex) {
       console.log("\n🎉 Product uniqueness migration completed successfully!");
       console.log("\n📋 New uniqueness rules:");
       console.log(
@@ -189,7 +184,75 @@ const updateProductUniqueness = async () => {
 
 // Run migration if this file is executed directly
 if (import.meta.url === `file://${process.argv[1]}`) {
-  updateProductUniqueness();
+  up();
 }
 
-export default updateProductUniqueness;
+
+/**
+ * Rollback the migration
+ */
+export const down = async () => {
+  console.log("🔄 005 Update Product Uniqueness Migration...");
+  console.log("🔄 No 005 Rolling back Migration implemented, careful if you have already done up migration...");
+}
+
+/**
+ * Check migration status
+ */
+export const status = async () => {
+  try {
+    // Check if Barcode collection exists
+    const collections = await mongoose.connection.db
+      .listCollections()
+      .toArray();
+    const productCollectionExists = collections.some(
+      (col) => col.name === "products"
+    );
+
+    // Check if products have barcodeData
+    const productWithBarcodeData = await Product.findOne({
+      barcodeData: { $exists: true },
+    });
+
+    // Get counts
+    const totalProducts = await Product.countDocuments();
+    const productsWithBarcodeData = await Product.countDocuments({
+      barcodeData: { $exists: true },
+    });
+    const productsWithBarcodes = await Product.countDocuments({
+      "barcodeData.hasBarcode": true,
+    });
+    const totalBarcodes = productCollectionExists
+      ? await Product.countDocuments()
+      : 0;
+
+    const migrationApplied = productCollectionExists && productWithBarcodeData != null;
+
+    return {
+      migrationApplied,
+      productCollectionExists,
+      productWithBarcodeData: !!productWithBarcodeData,
+      stats: {
+        totalProducts,
+        productsWithBarcodeData,
+        productsWithBarcodes,
+        totalBarcodes,
+        completionRate:
+          totalProducts > 0
+            ? ((productsWithBarcodes / totalProducts) * 100).toFixed(2)
+            : 0,
+      },
+    };
+  } catch (error) {
+    console.error("Error checking migration status:", error);
+    return {
+      error: error.message,
+    };
+  }
+};
+
+export default {
+  up,
+  down,
+  status
+};

@@ -11,10 +11,9 @@
  */
 
 import mongoose from "mongoose";
-import { pathToFileURL } from 'url';
-await import(pathToFileURL('../models/Product.js'));
-await import(pathToFileURL('../models/Barcode.js'));
-await import(pathToFileURL('../models/Vendor.js'));
+import Product from '../models/Product.js';
+import Barcode from '../models/Barcode.js';
+
 
 /**
  * Run the migration
@@ -28,7 +27,7 @@ export const up = async () => {
 
     // Create Barcode collection indexes
     await Barcode.collection.createIndexes([
-      { key: { barcodeText: 1 }, unique: true, name: "barcodeText_unique" },
+      { key: { barcodeText: 1 }, unique: true },
       { key: { productId: 1 }, name: "productId_index" },
       { key: { vendorId: 1 }, name: "vendorId_index" },
       { key: { vendorPrefix: 1 }, name: "vendorPrefix_index" },
@@ -65,11 +64,6 @@ export const up = async () => {
           key: { "barcodeData.barcodeId": 1 },
           sparse: true,
           name: "barcodeData_barcodeId_index",
-        },
-        {
-          key: { "barcodeData.barcodeText": 1 },
-          sparse: true,
-          name: "barcodeData_barcodeText_index",
         },
         {
           key: { "barcodeData.hasBarcode": 1 },
@@ -352,7 +346,6 @@ export const down = async () => {
 
     const indexesToDrop = [
       "barcodeData_barcodeId_index",
-      "barcodeData_barcodeText_index",
       "barcodeData_hasBarcode_index",
       "vendor_hasBarcode_compound",
     ];

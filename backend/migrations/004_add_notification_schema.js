@@ -11,9 +11,8 @@
  */
 
 import mongoose from "mongoose";
-import { pathToFileURL } from 'url';
-import Notification from await import(pathToFileURL('../models/Notification.js'));
-import User from await import(pathToFileURL('../models/User.js'));
+import Notification from '../models/Notification.js';
+import User from '../models/User.js';
 
 /**
  * Run the migration
@@ -356,9 +355,11 @@ export const status = async () => {
     // Get collection stats
     let collectionStats = null;
     if (collectionExists) {
+      const collection = await mongoose.connection.db
+        .collection("notifications");
+
       collectionStats = await mongoose.connection.db
-        .collection("notifications")
-        .stats();
+        .command({ collStats: collection.collectionName});
     }
 
     // Get indexes

@@ -12,17 +12,18 @@
 import mongoose from "mongoose";
 import fs from "fs/promises";
 import path from "path";
-import { fileURLToPath } from "url";
+import { pathToFileURL, fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const migrationsDir = path.join(__dirname, "../migrations");
 
 // Database connection
 const connectDB = async () => {
   try {
     const mongoURI =
-      process.env.MONGODB_URI || "mongodb://localhost:27017/product-ecosystem";
-    await mongoose.connect(mongoURI);
+      process.env.MONGODB_URI || "mongodb://localhost:27017/product-ecosystem"; 
+      await mongoose.connect(mongoURI);
     console.log("📦 Connected to MongoDB");
   } catch (error) {
     console.error("❌ Database connection failed:", error);
@@ -69,8 +70,8 @@ const getMigrationFiles = async () => {
 // Load migration module
 const loadMigration = async (migrationPath) => {
   try {
-    const migration = await import(migrationPath);
-    return migration.default || migration;
+    const module = await import(pathToFileURL(migrationPath));
+    return module;
   } catch (error) {
     console.error(`❌ Error loading migration ${migrationPath}:`, error);
     throw error;
@@ -118,7 +119,10 @@ const recordRollback = async (migrationName, executionTime) => {
 };
 
 // Run migration up
-const runMigrationUp = async (migrationFile) => {
+const runMigrationUp = async (migrationFile, db) => {
+  const {name, filename, path} = migrationFile;
+  const direction = "up";
+
   console.log(`\n🚀 Running migration: ${migrationFile.name}`);
 
   const isApplied = await isMigrationApplied(migrationFile.name);
@@ -133,6 +137,13 @@ const runMigrationUp = async (migrationFile) => {
 
   try {
     const migration = await loadMigration(migrationFile.path);
+
+    if (typeof migration[direction] === 'function') {
+      console.log(`Running ${direction} for ${name}`);
+      await migration[direction](db);
+    } else {
+      console.warn(`Skipping ${name}, no ${direction} function`);
+    }
 
     if (typeof migration.up !== "function") {
       throw new Error(
@@ -313,7 +324,7 @@ Examples:
     process.exit(1);
   }
 
-  await connectDB();
+  const db = await connectDB();  
 
   try {
     const migrationFiles = await getMigrationFiles();
@@ -337,7 +348,7 @@ Examples:
             console.error(`❌ Migration ${migrationName} not found`);
             process.exit(1);
           }
-          await runMigrationUp(migrationFile);
+          await runMigrationUp(migrationFile, db);
         } else {
           // Run all pending migrations
           console.log(`🚀 Running all pending migrations...`);
@@ -345,7 +356,7 @@ Examples:
           let skippedCount = 0;
 
           for (const migrationFile of migrationFiles) {
-            const result = await runMigrationUp(migrationFile);
+            const result = await runMigrationUp(migrationFile, db);
             if (result.skipped) {
               skippedCount++;
             } else if (result.success) {
