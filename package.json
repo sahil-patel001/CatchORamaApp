@@ -55,7 +55,6 @@
     "@tanstack/react-table": "^8.21.3",
     "@types/multer": "^1.4.13",
     "axios": "^1.10.0",
-    "canvas": "^2.11.2",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
