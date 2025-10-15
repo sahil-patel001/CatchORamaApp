@@ -1,7 +1,8 @@
 import axios from "axios";
 import { Product } from "../types";
+import api from "./api";
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/products`;
+const API_BASE_URL = `/products`;
 
 interface GetProductsParams {
   page?: number;
@@ -14,7 +15,7 @@ interface GetProductsParams {
 }
 
 export const getProducts = async (params: GetProductsParams = {}) => {
-  const response = await axios.get(API_BASE_URL, {
+  const response = await api.get(API_BASE_URL, {
     params,
     withCredentials: true,
   });
@@ -22,7 +23,7 @@ export const getProducts = async (params: GetProductsParams = {}) => {
 };
 
 export const getProduct = async (id: string) => {
-  const response = await axios.get(`${API_BASE_URL}/${id}`, {
+  const response = await api.get(`${API_BASE_URL}/${id}`, {
     withCredentials: true,
   });
   return response.data;
@@ -45,7 +46,7 @@ export const createProduct = async (
       formData.append("image", imageFile);
     }
 
-    const response = await axios.post(API_BASE_URL, formData, {
+    const response = await api.post(API_BASE_URL, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -97,7 +98,7 @@ export const updateProduct = async (
       formData.append("image", imageFile);
     }
 
-    const response = await axios.put(`${API_BASE_URL}/${id}`, formData, {
+    const response = await api.put(`${API_BASE_URL}/${id}`, formData, {
       headers: {
         "Content-Type": "multipart/form-data",
       },
@@ -128,7 +129,7 @@ export const updateProduct = async (
 
 export const deleteProduct = async (id: string) => {
   try {
-    const response = await axios.delete(`${API_BASE_URL}/${id}`, {
+    const response = await api.delete(`${API_BASE_URL}/${id}`, {
       withCredentials: true,
     });
     return response.data;
@@ -158,14 +159,14 @@ export const updateProductStock = async (
   id: string,
   stockData: { quantity: number; type: "increment" | "decrement" }
 ) => {
-  const response = await axios.patch(`${API_BASE_URL}/${id}/stock`, stockData, {
+  const response = await api.patch(`${API_BASE_URL}/${id}/stock`, stockData, {
     withCredentials: true,
   });
   return response.data;
 };
 
 export const searchProducts = async (query: string) => {
-  const response = await axios.get(`${API_BASE_URL}/search`, {
+  const response = await api.get(`${API_BASE_URL}/search`, {
     params: { q: query },
     withCredentials: true,
   });
@@ -173,21 +174,21 @@ export const searchProducts = async (query: string) => {
 };
 
 export const getProductCategories = async () => {
-  const response = await axios.get(`${API_BASE_URL}/categories`, {
+  const response = await api.get(`${API_BASE_URL}/categories`, {
     withCredentials: true,
   });
   return response.data;
 };
 
 export const checkProductOrderLinkage = async (id: string) => {
-  const response = await axios.get(`${API_BASE_URL}/${id}/order-linkage`, {
+  const response = await api.get(`${API_BASE_URL}/${id}/order-linkage`, {
     withCredentials: true,
   });
   return response.data;
 };
 
 export const archiveProduct = async (id: string) => {
-  const response = await axios.patch(
+  const response = await api.patch(
     `${API_BASE_URL}/${id}/archive`,
     {},
     {
@@ -198,7 +199,7 @@ export const archiveProduct = async (id: string) => {
 };
 
 export const unarchiveProduct = async (id: string) => {
-  const response = await axios.patch(
+  const response = await api.patch(
     `${API_BASE_URL}/${id}/unarchive`,
     {},
     {
@@ -209,7 +210,7 @@ export const unarchiveProduct = async (id: string) => {
 };
 
 export const getArchivedProducts = async (params: GetProductsParams = {}) => {
-  const response = await axios.get(`${API_BASE_URL}/archived`, {
+  const response = await api.get(`${API_BASE_URL}/archived`, {
     params,
     withCredentials: true,
   });

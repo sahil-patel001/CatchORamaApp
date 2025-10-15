@@ -1,8 +1,8 @@
 import axios from "axios";
 import { Notification } from "@/types";
+import api from "./api";
 
-const API_BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api/v1";
+const API_BASE_URL = "/notifications";
 
 export interface NotificationQuery {
   page?: number;
@@ -53,7 +53,7 @@ class NotificationService {
         params.append("category", query.category);
       }
 
-      const response = await axios.get(`${API_BASE_URL}/notifications`, {
+      const response = await api.get(``, {
         params: Object.fromEntries(params),
         withCredentials: true,
       });
@@ -79,7 +79,7 @@ class NotificationService {
   async getRecentNotifications(): Promise<Notification[]> {
     try {
       // Use the unread endpoint for dropdown which gives us recent notifications
-      const response = await axios.get(`${API_BASE_URL}/notifications/unread`, {
+      const response = await api.get(`${API_BASE_URL}/unread`, {
         params: { limit: 5 },
         withCredentials: true,
       });
@@ -96,7 +96,7 @@ class NotificationService {
    */
   async getUnreadCount(): Promise<number> {
     try {
-      const response = await axios.get(`${API_BASE_URL}/notifications/unread`, {
+      const response = await api.get(`${API_BASE_URL}/unread`, {
         withCredentials: true,
       });
 
@@ -112,8 +112,8 @@ class NotificationService {
    */
   async markAsRead(notificationId: string): Promise<void> {
     try {
-      await axios.patch(
-        `${API_BASE_URL}/notifications/${notificationId}/read`,
+      await api.patch(
+        `${API_BASE_URL}/${notificationId}/read`,
         {},
         {
           withCredentials: true,
@@ -130,8 +130,8 @@ class NotificationService {
    */
   async markAsUnread(notificationId: string): Promise<void> {
     try {
-      await axios.patch(
-        `${API_BASE_URL}/notifications/${notificationId}/unread`,
+      await api.patch(
+        `${API_BASE_URL}/${notificationId}/unread`,
         {},
         {
           withCredentials: true,
@@ -148,8 +148,8 @@ class NotificationService {
    */
   async markAllAsRead(): Promise<void> {
     try {
-      await axios.patch(
-        `${API_BASE_URL}/notifications/mark-all-read`,
+      await api.patch(
+        `${API_BASE_URL}/mark-all-read`,
         {},
         {
           withCredentials: true,
@@ -166,7 +166,7 @@ class NotificationService {
    */
   async deleteNotification(notificationId: string): Promise<void> {
     try {
-      await axios.delete(`${API_BASE_URL}/notifications/${notificationId}`, {
+      await api.delete(`${API_BASE_URL}/${notificationId}`, {
         withCredentials: true,
       });
     } catch (error) {

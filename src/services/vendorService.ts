@@ -1,13 +1,14 @@
 import axios from "axios";
 import { Vendor } from "@/types";
+import api from "./api";
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/vendors`;
+const API_BASE_URL = `/vendors`;
 
 // Get the current user's vendor profile
 export async function getVendorProfile(): Promise<Vendor> {
   try {
-    const response = await axios.get(
-      `${import.meta.env.VITE_API_BASE_URL}/auth/me`,
+    const response = await api.get(
+      `/auth/me`,
       {
         withCredentials: true,
       }
@@ -15,7 +16,7 @@ export async function getVendorProfile(): Promise<Vendor> {
 
     // If the user has a vendor profile, fetch it
     if (response.data.data.user.role === "vendor") {
-      const vendorResponse = await axios.get(`${API_BASE_URL}/profile`, {
+      const vendorResponse = await api.get(`${API_BASE_URL}/profile`, {
         withCredentials: true,
       });
       return vendorResponse.data.data.vendor;
@@ -46,7 +47,7 @@ export async function fetchVendors(
       params.status = status;
     }
 
-    const response = await axios.get(API_BASE_URL, {
+    const response = await api.get(API_BASE_URL, {
       params,
       withCredentials: true,
     });
@@ -63,7 +64,7 @@ export async function fetchVendors(
 
 export async function fetchVendorById(id: string): Promise<Vendor> {
   try {
-    const response = await axios.get(`${API_BASE_URL}/${id}`, {
+    const response = await api.get(`${API_BASE_URL}/${id}`, {
       withCredentials: true,
     });
     return response.data.data?.vendor;
@@ -77,7 +78,7 @@ export async function fetchVendorById(id: string): Promise<Vendor> {
 
 export async function addVendor(data: Partial<Vendor>): Promise<Vendor> {
   try {
-    const response = await axios.post(API_BASE_URL, data, {
+    const response = await api.post(API_BASE_URL, data, {
       withCredentials: true,
     });
     return response.data.data?.vendor;
@@ -94,7 +95,7 @@ export async function updateVendor(
   data: Partial<Vendor>
 ): Promise<Vendor> {
   try {
-    const response = await axios.put(`${API_BASE_URL}/${id}`, data, {
+    const response = await api.put(`${API_BASE_URL}/${id}`, data, {
       withCredentials: true,
     });
     return response.data.data?.vendor;
@@ -108,7 +109,7 @@ export async function updateVendor(
 
 export async function deleteVendor(id: string): Promise<void> {
   try {
-    await axios.delete(`${API_BASE_URL}/${id}`, {
+    await api.delete(`${API_BASE_URL}/${id}`, {
       withCredentials: true,
     });
   } catch (error: unknown) {
@@ -121,7 +122,7 @@ export async function deleteVendor(id: string): Promise<void> {
 
 export async function getVendorPrefix(id: string): Promise<string> {
   try {
-    const response = await axios.get(`${API_BASE_URL}/${id}/invoice-prefix`, {
+    const response = await api.get(`${API_BASE_URL}/${id}/invoice-prefix`, {
       withCredentials: true,
     });
     return response.data.data?.vendorPrefix || "VD01";
@@ -139,7 +140,7 @@ export async function setVendorPrefix(
   prefix: string
 ): Promise<string> {
   try {
-    const response = await axios.put(
+    const response = await api.put(
       `${API_BASE_URL}/${id}/invoice-prefix`,
       { prefix },
       {

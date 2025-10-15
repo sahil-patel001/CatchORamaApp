@@ -1,9 +1,10 @@
 import axios from "axios";
+import api from "./api";
 
-const API_BASE_URL = `${import.meta.env.VITE_API_BASE_URL}/orders`;
+const API_BASE_URL = `/orders`;
 
 export const getOrders = async () => {
-  const response = await axios.get(API_BASE_URL, {
+  const response = await api.get(API_BASE_URL, {
     withCredentials: true,
   });
   return response.data;

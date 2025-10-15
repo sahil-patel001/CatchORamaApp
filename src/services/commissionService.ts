@@ -1,7 +1,8 @@
 import axios from "axios";
 import { Commission, CommissionStats, CommissionHistoryEntry } from "@/types";
+import api from "./api";
 
-const API_URL = `${import.meta.env.VITE_API_BASE_URL}/commissions`;
+const API_URL = `/commissions`;
 
 export interface PaginationParams {
   page?: number;
@@ -33,7 +34,7 @@ export interface PaginatedResponse<T> {
 export const getCommissions = async (
   filters: CommissionFilters = {}
 ): Promise<PaginatedResponse<Commission>> => {
-  const response = await axios.get(API_URL, {
+  const response = await api.get(API_URL, {
     withCredentials: true,
     params: filters,
   });
@@ -51,7 +52,7 @@ export const getCommissions = async (
  * Fetches a single commission by ID
  */
 export const getCommission = async (id: string): Promise<Commission> => {
-  const response = await axios.get(`${API_URL}/${id}`, {
+  const response = await api.get(`${API_URL}/${id}`, {
     withCredentials: true,
   });
   return response.data.data;
@@ -67,7 +68,7 @@ export const generateCommission = async (data: {
   periodType?: "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
   commissionRate?: number; // Optional commission rate override (0-1)
 }): Promise<Commission> => {
-  const response = await axios.post(`${API_URL}/generate`, data, {
+  const response = await api.post(`${API_URL}/generate`, data, {
     withCredentials: true,
   });
   return response.data.data;
@@ -97,7 +98,7 @@ export const bulkGenerateCommissions = async (data: {
     }>;
   };
 }> => {
-  const response = await axios.post(`${API_URL}/bulk-generate`, data, {
+  const response = await api.post(`${API_URL}/bulk-generate`, data, {
     withCredentials: true,
   });
   return response.data.data;
@@ -107,7 +108,7 @@ export const bulkGenerateCommissions = async (data: {
  * Approves a commission
  */
 export const approveCommission = async (id: string): Promise<Commission> => {
-  const response = await axios.put(
+  const response = await api.put(
     `${API_URL}/${id}/approve`,
     {},
     {
@@ -128,7 +129,7 @@ export const markCommissionAsPaid = async (
     notes?: string;
   }
 ): Promise<Commission> => {
-  const response = await axios.put(`${API_URL}/${id}/pay`, paymentData, {
+  const response = await api.put(`${API_URL}/${id}/pay`, paymentData, {
     withCredentials: true,
   });
   return response.data.data;
@@ -141,7 +142,7 @@ export const disputeCommission = async (
   id: string,
   notes: string
 ): Promise<Commission> => {
-  const response = await axios.put(
+  const response = await api.put(
     `${API_URL}/${id}/dispute`,
     { notes },
     {
@@ -164,7 +165,7 @@ export const updateCommission = async (
     };
   }
 ): Promise<Commission> => {
-  const response = await axios.put(`${API_URL}/${id}`, updates, {
+  const response = await api.put(`${API_URL}/${id}`, updates, {
     withCredentials: true,
   });
   return response.data.data;
@@ -176,7 +177,7 @@ export const updateCommission = async (
 export const deleteCommission = async (
   id: string
 ): Promise<{ message: string }> => {
-  const response = await axios.delete(`${API_URL}/${id}`, {
+  const response = await api.delete(`${API_URL}/${id}`, {
     withCredentials: true,
   });
   return response.data.data;
@@ -190,7 +191,7 @@ export const getCommissionStats = async (filters?: {
   startDate?: string;
   endDate?: string;
 }): Promise<CommissionStats> => {
-  const response = await axios.get(`${API_URL}/stats`, {
+  const response = await api.get(`${API_URL}/stats`, {
     withCredentials: true,
     params: filters,
   });
@@ -207,7 +208,7 @@ export const getVendorCommissions = async (
     endDate?: string;
   } = {}
 ): Promise<PaginatedResponse<Commission>> => {
-  const response = await axios.get(`${API_URL}/vendor`, {
+  const response = await api.get(`${API_URL}/vendor`, {
     withCredentials: true,
     params: filters,
   });
@@ -229,7 +230,7 @@ export const getCommissionHistory = async (
 ): Promise<CommissionHistoryEntry[]> => {
   // Note: This would need to be implemented in the backend as a separate endpoint
   // For now, this is a placeholder implementation
-  const response = await axios.get(`${API_URL}/${commissionId}/history`, {
+  const response = await api.get(`${API_URL}/${commissionId}/history`, {
     withCredentials: true,
     params: options,
   });
@@ -243,7 +244,7 @@ export const exportCommissions = async (
   filters: CommissionFilters = {},
   format: "csv" | "json" = "csv"
 ): Promise<Blob> => {
-  const response = await axios.get(`${API_URL}/export`, {
+  const response = await api.get(`${API_URL}/export`, {
     withCredentials: true,
     params: { ...filters, format },
     responseType: "blob",

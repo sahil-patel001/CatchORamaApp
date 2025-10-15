@@ -133,6 +133,7 @@ export const login = asyncHandler(async (req, res, next) => {
         role: user.role,
         createdAt: user.createdAt,
         lastLogin: lastLogin,
+        token: token
       };
 
       if (vendor) {

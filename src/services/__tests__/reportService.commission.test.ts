@@ -7,7 +7,7 @@ import type { CommissionReport, ReportPeriod } from "@/types";
 vi.mock("axios");
 const mockedAxios = axios as any;
 
-const API_URL = `${import.meta.env.VITE_API_BASE_URL}/reports`;
+const API_URL = `/reports`;
 
 describe("ReportService - Commission Report", () => {
   beforeEach(() => {

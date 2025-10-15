@@ -1,7 +1,8 @@
 import axios from "axios";
 import { SalesReport, ReportPeriod, CommissionReport } from "@/types";
+import api from "./api";
 
-const API_URL = `${import.meta.env.VITE_API_BASE_URL}/reports`;
+const API_URL = `/reports`;
 
 /**
  * Fetches the sales report for the logged-in vendor.
@@ -25,7 +26,7 @@ export const getSalesReport = async (
     params.period = period;
   }
 
-  const response = await axios.get(`${API_URL}/sales`, {
+  const response = await api.get(`${API_URL}/sales`, {
     withCredentials: true,
     params,
   });
@@ -56,7 +57,7 @@ export const getVendorSalesReportAsAdmin = async (
     params.period = period;
   }
 
-  const response = await axios.get(`${API_URL}/sales`, {
+  const response = await api.get(`${API_URL}/sales`, {
     withCredentials: true,
     params,
   });
@@ -85,7 +86,7 @@ export const getCommissionReport = async (
   if (paymentStatus && paymentStatus !== "all")
     params.paymentStatus = paymentStatus;
 
-  const response = await axios.get(`${API_URL}/commission`, {
+  const response = await api.get(`${API_URL}/commission`, {
     withCredentials: true,
     params,
   });

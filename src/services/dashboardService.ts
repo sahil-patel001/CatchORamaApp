@@ -1,8 +1,7 @@
 import axios from "axios";
+import api from "./api";
 
-const API_BASE_URL = `${
-  import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api/v1"
-}/dashboard`;
+const API_BASE_URL = `/dashboard`;
 
 // Utility to add the authorization token to requests
 const getAuthHeaders = () => {
@@ -26,7 +25,7 @@ export const getAdminDashboardStats = async (
     params.period = "30d"; // default fallback
   }
 
-  const response = await axios.get(`${API_BASE_URL}/admin`, {
+  const response = await api.get(`${API_BASE_URL}/admin`, {
     params,
     headers: getAuthHeaders(),
     withCredentials: true,
@@ -50,7 +49,7 @@ export const getVendorDashboardStats = async (
     params.period = "30d"; // default fallback
   }
 
-  const response = await axios.get(`${API_BASE_URL}/vendor`, {
+  const response = await api.get(`${API_BASE_URL}/vendor`, {
     params,
     headers: getAuthHeaders(),
     withCredentials: true,

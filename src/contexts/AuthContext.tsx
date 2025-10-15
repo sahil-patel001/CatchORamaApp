@@ -65,6 +65,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await authService.login(email, password);
       if (res.success && res.data?.user) {
         setUser(res.data.user);
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('refreshToken', res.data.refreshToken);
         setIsLoading(false);
         return { success: true };
       } else {

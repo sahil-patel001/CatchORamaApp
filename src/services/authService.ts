@@ -1,4 +1,5 @@
 import axios from "axios";
+import api from "./api";
 
 const API_BASE =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api/v1";
@@ -28,8 +29,8 @@ export async function signup(
 }
 
 export async function logout() {
-  const res = await axios.post(
-    `${API_BASE}/auth/logout`,
+  const res = await api.post(
+    `/auth/logout`,
     {},
     { withCredentials: true }
   );
@@ -49,14 +50,14 @@ export async function changePassword(
     payload.currentPassword = currentPassword;
   }
 
-  const res = await axios.put(`${API_BASE}/auth/change-password`, payload, {
+  const res = await api.put(`${API_BASE}/auth/change-password`, payload, {
     withCredentials: true,
   });
   return res.data;
 }
 
 export async function getPasswordStatus() {
-  const res = await axios.get(`${API_BASE}/auth/password-status`, {
+  const res = await api.get(`${API_BASE}/auth/password-status`, {
     withCredentials: true,
   });
   return res.data;
