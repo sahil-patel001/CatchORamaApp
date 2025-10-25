@@ -18,6 +18,7 @@ export const notificationConfig = {
     corsOrigins: process.env.WEBSOCKET_CORS_ORIGINS?.split(",") || [
       "http://localhost:5173",
       "http://localhost:3000",
+      "http://catchorama.com"
     ],
     pingTimeout: parseInt(process.env.WEBSOCKET_PING_TIMEOUT) || 60000,
     pingInterval: parseInt(process.env.WEBSOCKET_PING_INTERVAL) || 25000,
