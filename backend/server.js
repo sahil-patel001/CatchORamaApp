@@ -61,7 +61,7 @@ const API_VERSION = process.env.API_VERSION || "v1";
 const io = new Server(server, {
   cors: {
     origin: notificationConfig.websocket.corsOrigins,
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   },
   pingTimeout: notificationConfig.websocket.pingTimeout,
