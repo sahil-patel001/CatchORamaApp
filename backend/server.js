@@ -45,6 +45,7 @@ import reportRoutes from "./routes/reports.js";
 import commissionRoutes from "./routes/commissions.js";
 import barcodeRoutes from "./routes/barcodes.js";
 import notificationRoutes from "./routes/notifications.js";
+import { error } from "console";
 
 // Load environment variables
 dotenv.config();
@@ -129,9 +130,11 @@ app.use(generalLimiter);
 // CORS configuration
 const corsOptions = {
   origin: function (origin, callback) {
-    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || [
-      "http://localhost:5173",
-    ];
+    
+    const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(",") || false;
+    if (!allowedOrigins || allowedOrigins && allowedOrigins.length == 0) {
+      throw new Error(`can not read value of ${process.env.ALLOWED_ORIGINS}!`);
+    }
 
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) return callback(null, true);

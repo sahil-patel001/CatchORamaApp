@@ -15,11 +15,7 @@ export const notificationConfig = {
   websocket: {
     enabled: process.env.WEBSOCKET_NOTIFICATIONS_ENABLED === "true" || true,
     port: parseInt(process.env.WEBSOCKET_PORT) || 5001,
-    corsOrigins: process.env.WEBSOCKET_CORS_ORIGINS?.split(",") || [
-      "http://localhost:5173",
-      "http://localhost:3000",
-      "http://catchorama.com"
-    ],
+    corsOrigins: process.env.WEBSOCKET_CORS_ORIGINS?.split(","),
     pingTimeout: parseInt(process.env.WEBSOCKET_PING_TIMEOUT) || 60000,
     pingInterval: parseInt(process.env.WEBSOCKET_PING_INTERVAL) || 25000,
   },

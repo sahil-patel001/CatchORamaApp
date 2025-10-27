@@ -1,4 +1,3 @@
-import axios from "axios";
 import { Notification } from "@/types";
 import api from "./api";
 
