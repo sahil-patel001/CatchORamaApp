@@ -1,4 +1,4 @@
-import React, { Suspense, useMemo } from "react";
+import React, { useMemo } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -79,7 +79,6 @@ const AppRoutes = React.memo(() => {
 
   return (
     <Routes>
-      <Suspense fallback={<div>Loading...</div>}></Suspense>
       <Route      
         path="/login"
         element={user ? <Navigate to={redirectPath} replace /> : <Login />}
