@@ -52,7 +52,7 @@ class NotificationService {
         params.append("category", query.category);
       }
 
-      const response = await api.get(``, {
+      const response = await api.get(`${API_BASE_URL}`, {
         params: Object.fromEntries(params),
         withCredentials: true,
       });
