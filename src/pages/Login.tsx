@@ -130,7 +130,7 @@ export function Login() {
               className="w-full font-manrope"
               onClick={async () => {
                 try {
-                  const apiUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:5001/api/v1";
+                  const apiUrl = import.meta.env.VITE_API_BASE_URL + "/api/v1";
                   
                   // First check if Google OAuth is configured
                   const response = await fetch(`${apiUrl}/auth/google`, {
