@@ -9,7 +9,7 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "nodemon server.js",
+    "dev": "node -r dotenv/config ./server.js",
     "seed": "node seeders/index.js",
     "seed:fresh": "node seeders/index.js --fresh",
     "fix:categories": "node scripts/fix-category-duplicates.js",
@@ -39,6 +39,7 @@
     "@aws-sdk/client-ses": "^3.883.0",
     "@sendgrid/mail": "^8.1.5",
     "bcryptjs": "^2.4.3",
+    "canvas": "^3.2.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",

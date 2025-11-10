@@ -1,4 +1,6 @@
 import axios from 'axios';
+import { logout } from './authService';
+import { useAuth } from '@/contexts/AuthContext';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL + "/api/v1",
@@ -24,10 +26,16 @@ api.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized - redirect to login
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
-      window.location.href = '/login';
+      try {
+        const { logout } = useAuth();
+        logout();
+      }
+      finally {
+        // Handle unauthorized - redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error.response?.data || error);
   }

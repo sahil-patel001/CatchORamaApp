@@ -47,7 +47,7 @@ export function ProductManagement() {
     queryKey: ["products"],
     queryFn: () => productService.getProducts(),
   });
-  const products: Product[] = data?.data?.products || [];
+  const products: Product[] = data?.products || [];
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);

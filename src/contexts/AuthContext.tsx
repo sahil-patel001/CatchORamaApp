@@ -23,6 +23,7 @@ interface AuthContextType {
     businessName?: string
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
+  refresh:() => Promise<void>;
   changePassword: (
     currentPassword: string | undefined,
     newPassword: string
@@ -39,6 +40,42 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Start: Private Section
+  let refreshTimer;
+
+  const startTokenRefreshTimer = () => {
+    const decoded = parseJwt(localStorage.getItem("token"));
+    const expiresIn = decoded.exp * 1000 - Date.now() - 5000; // refresh 5s early
+    refreshTimer = setTimeout(() => refresh(), expiresIn);
+  };
+
+  const stopTokenRefreshTimer = () => {
+    if (refreshTimer) clearTimeout(refreshTimer);
+  };
+
+  const parseJwt = (token) => {
+    try {
+      return JSON.parse(atob(token.split(".")[1]));
+    } catch {
+      return {};
+    }
+  };
+
+  const setAuthContext = (data) => {
+    setUser(data.user);
+    localStorage.setItem('token', data.token);
+    localStorage.setItem('refreshToken', data.refreshToken);
+    setIsLoading(false);
+  }
+
+  const resetAuthContext = () => {
+    setUser(null);
+    setIsLoading(false);
+    localStorage.clear();
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+  }
 
   useEffect(() => {
     // On mount, check if user is authenticated via cookie
@@ -64,19 +101,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const res = await authService.login(email, password);
       if (res.success && res.data?.user) {
-        setUser(res.data.user);
-        localStorage.setItem('token', res.data.token);
-        localStorage.setItem('refreshToken', res.data.refreshToken);
-        setIsLoading(false);
+        setAuthContext(res.data);
+        startTokenRefreshTimer();
         return { success: true };
       } else {
-        setUser(null);
-        setIsLoading(false);
+        resetAuthContext();
         return { success: false, error: res.message || "Login failed" };
       }
     } catch (err: unknown) {
-      setUser(null);
-      setIsLoading(false);
+      resetAuthContext();
       let errorMsg = "Login failed";
       if (
         err &&
@@ -121,13 +154,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setIsLoading(false);
           return { success: true };
         } else {
-          setUser(null);
-          setIsLoading(false);
+          resetAuthContext();
           return { success: false, error: res.message || "Signup failed" };
         }
       } catch (err: unknown) {
-        setUser(null);
-        setIsLoading(false);
+        resetAuthContext();
         let errorMsg = "Signup failed";
         if (
           err &&
@@ -152,7 +183,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     []
   );
-
   const logout = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -160,9 +190,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } catch {
       // Ignore errors on logout
     }
-    setUser(null);
-    setIsLoading(false);
+    finally {
+      resetAuthContext();
+      stopTokenRefreshTimer();
+    }
+    
   }, []);
+
+
+  const refresh = async () => {
+    try {
+      const res = await authService.getRefresh();
+      if (res.success && res.data?.user) {
+        setAuthContext(res.data);
+        startTokenRefreshTimer(res.data.token);
+        return { success: true };
+      } else {
+        resetAuthContext();
+        return { success: false, error: res.message || "Session expired!" };
+      }
+    } catch (err: unknown) {
+      resetAuthContext();
+      logout();
+    }
+  }
 
   const changePassword = useCallback(
     async (currentPassword: string | undefined, newPassword: string) => {

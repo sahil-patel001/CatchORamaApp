@@ -63,6 +63,22 @@ export async function getPasswordStatus() {
 }
 
 export async function getMe() {
-  const res = await axios.get(`${API_BASE}/auth/me`, { withCredentials: true });
+  
+  
+  const res = await axios.get(`${API_BASE}/auth/me`, { 
+    withCredentials: true 
+  });
+  return res.data;
+}
+
+export async function getRefresh() {
+  const params = {
+    refreshToken: localStorage.getItem("refreshToken")
+  };
+
+  const res = await axios.post(`${API_BASE}/auth/refresh`, {
+    params,
+    withCredentials: true 
+  });
   return res.data;
 }

@@ -58,7 +58,7 @@ class NotificationService {
       });
 
       // Transform backend response to match frontend interface
-      const backendData = response.data.data;
+      const backendData = response.data;
       return {
         notifications: backendData.notifications,
         total: backendData.pagination.total,

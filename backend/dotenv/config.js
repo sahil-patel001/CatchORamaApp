@@ -65,7 +65,7 @@ const envSchema = {
   ALLOWED_ORIGINS: {
     required: false,
     type: "string",
-    default: "http://localhost:5173,http://catchorama.com",
+    default: "http://localhost:8080,http://catchorama.com",
     description: "Comma-separated list of allowed CORS origins",
   },
 
@@ -93,7 +93,7 @@ const envSchema = {
   WEBSOCKET_CORS_ORIGINS: {
     required: false,
     type: "string",
-    default: "http://localhost:5173,http://localhost:3000,http://catchorama.com",
+    default: "http://localhost:8080,http://catchorama.com",
     description: "Comma-separated list of allowed WebSocket CORS origins",
   },
   WEBSOCKET_PING_TIMEOUT: {

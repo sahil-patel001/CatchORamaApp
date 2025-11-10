@@ -79,7 +79,7 @@ export function AdminDashboard() {
     },
   });
 
-  const stats = statsData?.data;
+  const stats = statsData;
 
   const navigateTo = (path: string) => {
     navigate(path);

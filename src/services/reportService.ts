@@ -90,5 +90,5 @@ export const getCommissionReport = async (
     withCredentials: true,
     params,
   });
-  return response.data.data;
+  return response.data;
 };

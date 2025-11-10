@@ -53,7 +53,7 @@ export async function fetchVendors(
     });
 
     // Backend returns { success: true, data: { vendors: [...] } }
-    return response.data.data?.vendors || [];
+    return response.data?.vendors || [];
   } catch (error: unknown) {
     console.error("Failed to fetch vendors:", error);
     throw new Error(

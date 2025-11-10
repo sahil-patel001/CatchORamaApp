@@ -41,7 +41,7 @@ export const getCommissions = async (
 
   // Backend returns { data: { commissions: [...], pagination: {...} } }
   // We need to map it to { data: [...], pagination: {...} }
-  const backendData = response.data.data;
+  const backendData = response.data;
   return {
     data: backendData.commissions || [],
     pagination: backendData.pagination,

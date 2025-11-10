@@ -104,13 +104,13 @@ export const generateProductBarcode = async (
 export const generateBulkBarcodes = async (
   request: BulkBarcodeGenerateRequest
 ): Promise<BulkBarcodeGenerateResponse> => {
-  const response = await api.post(
+  const response:BulkBarcodeGenerateResponse = await api.post(
     `/barcodes/generate-bulk`,
     request,
     axiosConfig
   );
 
-  return response.data;
+  return response;
 };
 
 /**
