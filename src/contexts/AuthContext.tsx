@@ -203,7 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const res = await authService.getRefresh();
       if (res.success && res.data?.user) {
         setAuthContext(res.data);
-        startTokenRefreshTimer(res.data.token);
+        startTokenRefreshTimer();
         return { success: true };
       } else {
         resetAuthContext();
