@@ -7,8 +7,7 @@ export async function login(email: string, password: string) {
   const res = await axios.post(
     `${API_BASE}/auth/login`,
     { email, password },
-    { 
-      withCredentials: true,
+    {
       headers: {
         'Content-Type': 'application/json'
       }
@@ -27,7 +26,6 @@ export async function signup(
   const payload: Record<string, unknown> = { name, email, password, role };
   if (role === "vendor" && businessName) payload.businessName = businessName;
   const res = await axios.post(`${API_BASE}/auth/register`, payload, {
-    withCredentials: true,
   });
   return res.data;
 }
@@ -36,7 +34,6 @@ export async function logout() {
   const res = await api.post(
     `/auth/logout`,
     {},
-    { withCredentials: true }
   );
   return res.data;
 }
@@ -55,14 +52,12 @@ export async function changePassword(
   }
 
   const res = await api.put(`/auth/change-password`, payload, {
-    withCredentials: true,
   });
   return res.data;
 }
 
 export async function getPasswordStatus() {
   const res = await api.get(`/auth/password-status`, {
-    withCredentials: true,
   });
   return res.data;
 }
@@ -78,8 +73,7 @@ export async function getRefresh() {
   };
 
   const res = await axios.post(`${API_BASE}/auth/refresh`, {
-    params,
-    withCredentials: true 
+    params
   });
   return res.data;
 }

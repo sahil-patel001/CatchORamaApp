@@ -184,22 +184,33 @@ export const logout = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/auth/me
 // @access  Private
 export const getMe = asyncHandler(async (req, res, next) => {
-  let userData = {
-    id: req.user._id,
-    name: req.user.name,
-    email: req.user.email,
-    role: req.user.role,
-    createdAt: req.user.createdAt,
-    lastLogin: req.user.lastLogin,
-  };
+  try {
+    let userData = {
+      id: req.user._id,
+      name: req.user.name,
+      email: req.user.email,
+      role: req.user.role,
+      createdAt: req.user.createdAt,
+      lastLogin: req.user.lastLogin,
+    };
 
-  // Get vendor info if user is a vendor
-  if (req.user.role === "vendor") {
-    const vendor = await Vendor.findOne({ userId: req.user._id });
-    if (vendor) {
-      userData.vendorId = vendor._id;
-      userData.businessName = vendor.businessName;
+    // Get vendor info if user is a vendor
+    if (req.user.role === "vendor") {
+      const vendor = await Vendor.findOne({ userId: req.user._id });
+      if (vendor) {
+        userData.vendorId = vendor._id;
+        userData.businessName = vendor.businessName;
+      }
+      throw "invalid user!";
     }
+    // else if (req.user.role = "superadmin") {}
+  } catch(err) {
+    return res.status(401).json({
+      success: false,
+      error: {
+        message: err || "No active session!",
+      },
+    });
   }
 
   res.status(200).json({
