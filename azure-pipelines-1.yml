@@ -40,7 +40,7 @@ steps:
       # You can also compare against a specific branch or commit
       # $changedFiles = git diff --name-only --relative --diff-filter=AMCR origin/main HEAD
       
-      echo "##vso[task.setvariable variable=FILE_CHANGED]false"
+      Write-Host "##vso[task.setvariable variable=FILE_CHANGED;]false"
       if ($changedFiles) {
           Write-Host "The following files have been modified or added:"
           $changedFiles | ForEach-Object { Write-Host "- $_" }
@@ -49,7 +49,7 @@ steps:
           # For example, filter for specific file types:
           $jsonFiles = $changedFiles | Where-Object { $_.EndsWith(".json") }
           if ($jsonFiles) {
-            echo "##vso[task.setvariable variable=FILE_CHANGED]true"
+            Write-Host "##vso[task.setvariable variable=FILE_CHANGED;]true"
           }
       }
 
