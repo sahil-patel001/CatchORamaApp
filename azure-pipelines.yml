@@ -29,7 +29,7 @@ steps:
     secureFile: 'ui-env-file'
 
 - script: |
-    cp /Y "$(environmentFile.secureFilePath)" ".env"
+    copy /Y "$(environmentFile.secureFilePath)" ".env"
   displayName: "Copy .env file from secure file"
   workingDirectory: '$(System.DefaultWorkingDirectory)'
 
