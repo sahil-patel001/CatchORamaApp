@@ -55,7 +55,7 @@ const envValidation = initializeEnvironment();
 
 const app = express();
 const server = createServer(app);
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT;
 const API_VERSION = process.env.API_VERSION || "v1";
 
 // Initialize Socket.IO
@@ -108,8 +108,8 @@ const createRateLimiter = (windowMs, max, message = "Too many requests") =>
 
 // General rate limiter
 const generalLimiter = createRateLimiter(
-  parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000, // 15 minutes
-  parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 100 // 100 requests per window
+  parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 1 * 60 * 1000, // 15 minutes
+  parseInt(process.env.RATE_LIMIT_MAX_REQUESTS) || 500 // 100 requests per window
 );
 
 // Stricter rate limiter for auth endpoints
@@ -151,6 +151,8 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
+// Preflight handline
+app.options("*", cors(corsOptions));
 
 // Performance monitoring
 app.use(requestTiming);

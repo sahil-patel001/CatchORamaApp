@@ -640,7 +640,7 @@ export const generateEnvTemplate = async (filename = ".env.example") => {
  */
 export const initializeEnvironment = () => {
   console.log("🔧 Validating environment configuration...");
-
+  process.env.NODE_ENV = "production";
   const validation = validateEnvironment();
 
   if (validation.errors.length > 0) {

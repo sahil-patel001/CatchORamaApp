@@ -167,6 +167,26 @@ export const EditProductModal = React.memo(
         e.preventDefault();
         if (!product) return;
 
+        const discountPrice = parseFloat(formData.discountPrice || "0");
+        const fullPrice = parseFloat(formData.price || "0");
+        if (fullPrice <= 0) {
+            toast({
+              title: "Price of product can not be zero!",
+              description: "Please amend full price.",
+              variant: "destructive",
+            });
+            return;
+        }
+
+        if (discountPrice >=  fullPrice) {
+            toast({
+            title: "Discount Price must be less than full price!",
+            description: "Please amend discounted price.",
+            variant: "destructive",
+          });
+          return;
+        }
+
         // Check for required dimension fields
         if (
           !formData.length ||

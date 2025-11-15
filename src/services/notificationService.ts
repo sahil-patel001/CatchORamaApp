@@ -83,7 +83,7 @@ class NotificationService {
         withCredentials: true,
       });
 
-      return response.data.data?.notifications || [];
+      return response.data?.notifications || [];
     } catch (error) {
       console.error("Error fetching recent notifications:", error);
       throw error;
@@ -99,7 +99,7 @@ class NotificationService {
         withCredentials: true,
       });
 
-      return response.data.data?.unreadCount || 0;
+      return response.data?.unreadCount || 0;
     } catch (error) {
       console.error("Error fetching unread count:", error);
       return 0;

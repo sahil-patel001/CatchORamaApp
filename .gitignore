@@ -26,3 +26,4 @@ dist-ssr
 # Cursor
 .cursor
 tasks/
+/backend/uploads

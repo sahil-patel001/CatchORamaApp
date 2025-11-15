@@ -4,7 +4,7 @@
  * Simple Low Stock Notification Test (No DB Connection Required)
  */
 
-import { shouldTriggerLowStockNotification } from "./utils/notificationTriggers.js";
+import { shouldTriggerLowStockNotification } from "../utils/notificationTriggers.js";
 
 console.log("🧪 Testing Low Stock Notification Logic\n");
 

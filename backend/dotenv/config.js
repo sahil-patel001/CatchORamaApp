@@ -65,7 +65,7 @@ const envSchema = {
   ALLOWED_ORIGINS: {
     required: false,
     type: "string",
-    default: "http://localhost:8080,http://catchorama.com",
+    default: process.env.ALLOWED_ORIGINS,
     description: "Comma-separated list of allowed CORS origins",
   },
 
@@ -93,7 +93,7 @@ const envSchema = {
   WEBSOCKET_CORS_ORIGINS: {
     required: false,
     type: "string",
-    default: "http://localhost:8080,http://catchorama.com",
+    default: process.env.ALLOWED_ORIGINS,
     description: "Comma-separated list of allowed WebSocket CORS origins",
   },
   WEBSOCKET_PING_TIMEOUT: {
@@ -342,7 +342,7 @@ const envSchema = {
   GOOGLE_CALLBACK_URL: {
     required: false,
     type: "string",
-    default: "http://localhost:5001/api/v1/auth/google/callback",
+    default: process.env.GOOGLE_CALLBACK_URL,
     description: "Google OAuth callback URL",
   },
 

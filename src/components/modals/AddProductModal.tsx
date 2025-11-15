@@ -108,6 +108,16 @@ export function AddProductModal({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (formData.discountPrice && formData.discountPrice >= formData.price) {
+        toast({
+        title: "Discount Price must be less than full price!",
+        description: "Please amend discounted price.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!formData.category) {
       toast({
         title: "Category Required",

@@ -7,7 +7,7 @@
 import {
   calculateCubicWeight,
   shouldTriggerCubicVolumeAlert,
-} from "./utils/notificationTriggers.js";
+} from "../utils/notificationTriggers.js";
 
 console.log("🧪 Testing Cubic Weight Calculation Logic\n");
 

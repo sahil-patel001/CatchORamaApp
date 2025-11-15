@@ -15,11 +15,11 @@ export async function getVendorProfile(): Promise<Vendor> {
     );
 
     // If the user has a vendor profile, fetch it
-    if (response.data.data.user.role === "vendor") {
+    if (response.data.user.role === "vendor") {
       const vendorResponse = await api.get(`${API_BASE_URL}/profile`, {
         withCredentials: true,
       });
-      return vendorResponse.data.data.vendor;
+      return vendorResponse.data.vendor;
     }
 
     throw new Error("User is not a vendor");
@@ -67,7 +67,7 @@ export async function fetchVendorById(id: string): Promise<Vendor> {
     const response = await api.get(`${API_BASE_URL}/${id}`, {
       withCredentials: true,
     });
-    return response.data.data?.vendor;
+    return response.data?.vendor;
   } catch (error: unknown) {
     console.error("Failed to fetch vendor:", error);
     throw new Error(
@@ -81,7 +81,7 @@ export async function addVendor(data: Partial<Vendor>): Promise<Vendor> {
     const response = await api.post(API_BASE_URL, data, {
       withCredentials: true,
     });
-    return response.data.data?.vendor;
+    return response.data?.vendor;
   } catch (error: unknown) {
     console.error("Failed to add vendor:", error);
     throw new Error(
@@ -98,7 +98,7 @@ export async function updateVendor(
     const response = await api.put(`${API_BASE_URL}/${id}`, data, {
       withCredentials: true,
     });
-    return response.data.data?.vendor;
+    return response.data?.vendor;
   } catch (error: unknown) {
     console.error("Failed to update vendor:", error);
     throw new Error(
@@ -125,7 +125,7 @@ export async function getVendorPrefix(id: string): Promise<string> {
     const response = await api.get(`${API_BASE_URL}/${id}/invoice-prefix`, {
       withCredentials: true,
     });
-    return response.data.data?.vendorPrefix || "VD01";
+    return response.data?.vendorPrefix || "VD01";
   } catch (error: unknown) {
     console.error("Failed to fetch vendor prefix:", error);
     throw new Error(
@@ -147,7 +147,7 @@ export async function setVendorPrefix(
         withCredentials: true,
       }
     );
-    return response.data.data?.vendorPrefix;
+    return response.data?.vendorPrefix;
   } catch (error: unknown) {
     console.error("Failed to set vendor prefix:", error);
     throw new Error(

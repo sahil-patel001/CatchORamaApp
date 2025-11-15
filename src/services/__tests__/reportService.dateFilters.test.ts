@@ -105,7 +105,7 @@ describe("Report Service - Date Filters", () => {
 
       const result = await getSalesReport("weekly");
 
-      expect(result).toEqual(mockSalesReport.data.data);
+      expect(result).toEqual(mockSalesReport.data);
     });
   });
 
@@ -190,7 +190,7 @@ describe("Report Service - Date Filters", () => {
 
       const result = await getVendorSalesReportAsAdmin("vendor123", "yearly");
 
-      expect(result).toEqual(mockSalesReport.data.data);
+      expect(result).toEqual(mockSalesReport.data);
     });
   });
 

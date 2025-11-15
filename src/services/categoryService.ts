@@ -9,7 +9,7 @@ export const getCategories = async (vendorId?: string): Promise<Category[]> => {
   const response = await api.get(url, {
     withCredentials: true,
   });
-  return response.data.data;
+  return response.data;
 };
 
 export const createCategory = async (
@@ -18,7 +18,7 @@ export const createCategory = async (
   const response = await api.post(API_URL, categoryData, {
     withCredentials: true,
   });
-  return response.data.data;
+  return response.data;
 };
 
 export const updateCategory = async (
@@ -28,7 +28,7 @@ export const updateCategory = async (
   const response = await api.put(`${API_URL}/${id}`, categoryData, {
     withCredentials: true,
   });
-  return response.data.data;
+  return response.data;
 };
 
 export const deleteCategory = async (id: string): Promise<void> => {

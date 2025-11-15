@@ -8,8 +8,8 @@
 import {
   NotificationUtils,
   createNotification,
-} from "./utils/notificationUtils.js";
-import { notificationConfig } from "./config/notification.js";
+} from "../utils/notificationUtils.js";
+import { notificationConfig } from "../config/notification.js";
 
 async function testNotificationUtils() {
   console.log("🧪 Testing Notification Utilities...\n");

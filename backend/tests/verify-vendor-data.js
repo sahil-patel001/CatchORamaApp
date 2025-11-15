@@ -1,7 +1,7 @@
 import dotenv from "dotenv";
-import { connectDB, disconnectDB } from "./config/database.js";
-import Vendor from "./models/Vendor.js";
-import User from "./models/User.js";
+import { connectDB, disconnectDB } from "../config/database.js";
+import Vendor from "../models/Vendor.js";
+import User from "../models/User.js";
 
 // Load environment variables
 dotenv.config();

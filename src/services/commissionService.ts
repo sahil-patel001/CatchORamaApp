@@ -55,7 +55,7 @@ export const getCommission = async (id: string): Promise<Commission> => {
   const response = await api.get(`${API_URL}/${id}`, {
     withCredentials: true,
   });
-  return response.data.data;
+  return response.data;
 };
 
 /**
@@ -71,7 +71,7 @@ export const generateCommission = async (data: {
   const response = await api.post(`${API_URL}/generate`, data, {
     withCredentials: true,
   });
-  return response.data.data;
+  return response.data;
 };
 
 /**
@@ -101,7 +101,7 @@ export const bulkGenerateCommissions = async (data: {
   const response = await api.post(`${API_URL}/bulk-generate`, data, {
     withCredentials: true,
   });
-  return response.data.data;
+  return response.data;
 };
 
 /**
@@ -115,7 +115,7 @@ export const approveCommission = async (id: string): Promise<Commission> => {
       withCredentials: true,
     }
   );
-  return response.data.data;
+  return response.data;
 };
 
 /**
@@ -132,7 +132,7 @@ export const markCommissionAsPaid = async (
   const response = await api.put(`${API_URL}/${id}/pay`, paymentData, {
     withCredentials: true,
   });
-  return response.data.data;
+  return response.data;
 };
 
 /**
@@ -149,7 +149,7 @@ export const disputeCommission = async (
       withCredentials: true,
     }
   );
-  return response.data.data;
+  return response.data;
 };
 
 /**
@@ -168,7 +168,7 @@ export const updateCommission = async (
   const response = await api.put(`${API_URL}/${id}`, updates, {
     withCredentials: true,
   });
-  return response.data.data;
+  return response.data;
 };
 
 /**
@@ -180,7 +180,7 @@ export const deleteCommission = async (
   const response = await api.delete(`${API_URL}/${id}`, {
     withCredentials: true,
   });
-  return response.data.data;
+  return response.data;
 };
 
 /**
@@ -195,7 +195,7 @@ export const getCommissionStats = async (filters?: {
     withCredentials: true,
     params: filters,
   });
-  return response.data.data;
+  return response.data;
 };
 
 /**
@@ -212,7 +212,7 @@ export const getVendorCommissions = async (
     withCredentials: true,
     params: filters,
   });
-  return response.data.data;
+  return response.data;
 };
 
 /**
@@ -234,7 +234,7 @@ export const getCommissionHistory = async (
     withCredentials: true,
     params: options,
   });
-  return response.data.data;
+  return response.data;
 };
 
 /**

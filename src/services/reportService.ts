@@ -30,7 +30,7 @@ export const getSalesReport = async (
     withCredentials: true,
     params,
   });
-  return response.data.data;
+  return response.data;
 };
 
 /**
@@ -61,7 +61,7 @@ export const getVendorSalesReportAsAdmin = async (
     withCredentials: true,
     params,
   });
-  return response.data.data;
+  return response.data;
 };
 
 /**
