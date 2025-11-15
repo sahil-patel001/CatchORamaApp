@@ -9,6 +9,8 @@ pool:
   name: 'Default'   # self-hosted agent
 
 steps:
+
+
 # Step 1: Checkout code
 - checkout: self
 
@@ -19,6 +21,17 @@ steps:
 #       echo "Running from: %CD%"
 #       dir # List contents of the current directory
 #     workingDirectory: '$(System.DefaultWorkingDirectory)' # Sets the working directory for this task
+
+# Step 1.1: Replace .env files
+- task: DownloadSecureFile@1
+  name: environmentFile
+  inputs:
+    secureFile: 'ui-env-file'
+
+- script: |
+    cp /Y "$(environmentFile.secureFilePath)" ".env"
+  displayName: "Copy .env file from secure file"
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
 
 # Step 2: Install dependencies (example: Node.js project)
 - task: NodeTool@0
