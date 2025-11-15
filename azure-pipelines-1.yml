@@ -11,6 +11,9 @@ trigger:
     include:
     - backend/** # This triggers the pipeline only when ch
 
+variables:
+  JSON_FILE_CHANGED: false
+
 pool:
   name: Default
 
@@ -40,7 +43,6 @@ steps:
       # You can also compare against a specific branch or commit
       # $changedFiles = git diff --name-only --relative --diff-filter=AMCR origin/main HEAD
       
-      Write-Host "##vso[task.setvariable variable=FILE_CHANGED;]false"
       if ($changedFiles) {
           Write-Host "The following files have been modified or added:"
           $changedFiles | ForEach-Object { Write-Host "- $_" }
@@ -49,12 +51,12 @@ steps:
           # For example, filter for specific file types:
           $jsonFiles = $changedFiles | Where-Object { $_.EndsWith(".json") }
           if ($jsonFiles) {
-            Write-Host "##vso[task.setvariable variable=FILE_CHANGED;]true"
+            Write-Host "##vso[task.setvariable variable=JSON_FILE_CHANGED;]true"
           }
       }
 
 - script: |
-    if [ "$(FILE_CHANGED)" = "true" ]; then
+    if [ "$(JSON_FILE_CHANGED)" = "true" ]; then
       echo "Install dependencies"
       npm install
     else
