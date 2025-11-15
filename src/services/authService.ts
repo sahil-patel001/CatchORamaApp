@@ -68,11 +68,7 @@ export async function getPasswordStatus() {
 }
 
 export async function getMe() {
-  
-  
-  const res = await api.get(`/auth/me`, { 
-    withCredentials: true 
-  });
+  const res = await api.get(`/auth/me`);
   return res.data;
 }
 
