@@ -30,7 +30,8 @@ steps:
   displayName: 'Install Node.js'
 
 - powershell: |
-    git fetch --unshallow
+    git fetch --unshallow 2>$null
+    git fetch
     $changed = git diff --name-only HEAD~1 HEAD
     if ($changed -match "backend/package.json") {
       echo "##vso[task.setvariable variable=FILE_CHANGED]true"
