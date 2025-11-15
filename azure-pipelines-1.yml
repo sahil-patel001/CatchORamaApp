@@ -55,13 +55,16 @@ steps:
           }
       }
 
-- script: |
-    if [ "$(JSON_FILE_CHANGED)" = "true" ]; then
+- powershell: |
+    Write-Host "Checking JSON File Changed..."
+    Write-Host "Value = $env:JSON_FILE_CHANGED"
+
+    if ($env:JSON_FILE_CHANGED -and $env:JSON_FILE_CHANGED.ToLower() -eq "true") {
       echo "Install dependencies"
       npm install
-    else
+    } else {
       echo "Skipping npm dependencies install"
-    fi
+    }
   displayName: 'Conditional step'
   workingDirectory: '$(Build.SourcesDirectory)/backend'
 
