@@ -54,14 +54,14 @@ export async function changePassword(
     payload.currentPassword = currentPassword;
   }
 
-  const res = await api.put(`${API_BASE}/auth/change-password`, payload, {
+  const res = await api.put(`/auth/change-password`, payload, {
     withCredentials: true,
   });
   return res.data;
 }
 
 export async function getPasswordStatus() {
-  const res = await api.get(`${API_BASE}/auth/password-status`, {
+  const res = await api.get(`/auth/password-status`, {
     withCredentials: true,
   });
   return res.data;
@@ -70,7 +70,7 @@ export async function getPasswordStatus() {
 export async function getMe() {
   
   
-  const res = await axios.get(`${API_BASE}/auth/me`, { 
+  const res = await api.get(`/auth/me`, { 
     withCredentials: true 
   });
   return res.data;
