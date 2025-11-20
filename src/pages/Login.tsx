@@ -15,12 +15,16 @@ export function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
-  const { login, signup, isLoading } = useAuth();
+  const { user, login, signup, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const redirectPath = location.state?.from || "/";
+
+  if (user) {
+    navigate(redirectPath, { replace: true });
+  }
 
   // Handle OAuth error messages from URL params
   useEffect(() => {

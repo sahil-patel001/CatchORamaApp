@@ -5,6 +5,7 @@ import React, {
   useEffect,
   useCallback,
   useMemo,
+  useRef,
 } from "react";
 import { User } from "@/types";
 import * as authService from "@/services/authService";
@@ -40,6 +41,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const isAuthChecked = useRef(false);
 
   // Start: Private Section
   let refreshTimer;
@@ -79,6 +81,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const checkAuth = async () => {
     setIsLoading(true);
+    isAuthChecked.current = true;
     try {
       const res = await authService.getMe();
       if (res.success && res.data?.user) {
@@ -93,8 +96,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     // On mount, check if user is authenticated via cookie
+    if (isAuthChecked.current) return;
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   const login = useCallback(async (email: string, password: string) => {
     setIsLoading(true);
