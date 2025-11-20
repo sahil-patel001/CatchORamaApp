@@ -34,7 +34,6 @@ api.interceptors.response.use(
         // Handle unauthorized - redirect to login
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
       }
     }
     return Promise.reject(error.response?.data || error);
