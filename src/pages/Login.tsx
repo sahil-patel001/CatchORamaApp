@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useLocation, useSearchParams } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,9 @@ export function Login() {
   const { login, signup, isLoading } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+  const location = useLocation();
   const [searchParams] = useSearchParams();
+  const redirectPath = location.state?.from || "/";
 
   // Handle OAuth error messages from URL params
   useEffect(() => {
@@ -82,6 +84,7 @@ export function Login() {
         title: "Login successful",
         description: "Welcome to the admin panel!",
       });
+      navigate(redirectPath, { replace: true });
     } else {
       toast({
         title: "Login failed",

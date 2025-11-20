@@ -77,22 +77,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem('refreshToken');
   }
 
+  const checkAuth = async () => {
+    setIsLoading(true);
+    try {
+      const res = await authService.getMe();
+      if (res.success && res.data?.user) {
+        setUser(res.data.user);
+        return true;
+      }
+      throw new Error("session expired!");
+    } catch {
+      resetAuthContext();
+    }
+  };
+
   useEffect(() => {
     // On mount, check if user is authenticated via cookie
-    const checkAuth = async () => {
-      setIsLoading(true);
-      try {
-        const res = await authService.getMe();
-        if (res.success && res.data?.user) {
-          setUser(res.data.user);
-        } else {
-          setUser(null);
-        }
-      } catch {
-        setUser(null);
-      }
-      setIsLoading(false);
-    };
     checkAuth();
   }, []);
 
@@ -197,8 +197,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     
   }, []);
 
-
-  const refresh = async () => {
+  const refresh = useCallback(async () => {
     try {
       const res = await authService.getRefresh();
       if (res.success && res.data?.user) {
@@ -211,9 +210,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
     } catch (err: unknown) {
       resetAuthContext();
-      logout();
     }
-  }
+  },[]);
 
   const changePassword = useCallback(
     async (currentPassword: string | undefined, newPassword: string) => {
@@ -266,17 +264,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Memoize the context value to prevent unnecessary re-renders
-  const contextValue = useMemo(
+  const contextValue:any = useMemo(
     () => ({
       user,
       login,
       signup,
       logout,
+      refresh,
       changePassword,
       getPasswordStatus,
-      isLoading,
+      isLoading
     }),
-    [user, login, signup, logout, changePassword, getPasswordStatus, isLoading]
+    [user, login, signup, logout, refresh, changePassword, getPasswordStatus, isLoading]
   );
 
   return (
@@ -286,8 +285,5 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error("useAuth must be used within an AuthProvider");
-  }
   return context;
 }

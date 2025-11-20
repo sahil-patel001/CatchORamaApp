@@ -204,6 +204,12 @@ export const getMe = asyncHandler(async (req, res, next) => {
       throw "invalid user!";
     }
     // else if (req.user.role = "superadmin") {}
+    res.status(200).json({
+      success: true,
+      data: {
+        user: userData,
+      },
+    });
   } catch(err) {
     return res.status(401).json({
       success: false,
@@ -212,13 +218,6 @@ export const getMe = asyncHandler(async (req, res, next) => {
       },
     });
   }
-
-  res.status(200).json({
-    success: true,
-    data: {
-      user: userData,
-    },
-  });
 });
 
 // @desc    Refresh token
