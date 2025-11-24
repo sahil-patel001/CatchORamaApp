@@ -152,6 +152,7 @@ export function AddProductModal({
       });
       return;
     }
+
     const baseProduct = {
       id: Date.now().toString(),
       name: formData.name,

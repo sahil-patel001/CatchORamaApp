@@ -48,7 +48,7 @@ import notificationRoutes from "./routes/notifications.js";
 import { error } from "console";
 
 // Load environment variables
-dotenv.config();
+dotenv.config({path: './.env'});
 
 // Initialize and validate environment
 const envValidation = initializeEnvironment();

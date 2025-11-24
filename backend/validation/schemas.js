@@ -327,7 +327,7 @@ export const createProductSchema = z.object({
       .optional(),
     vendorId: z
       .string()
-      .min(2, ""),
+      .min(2, "").optional(),
     image: z.string().url("Invalid image URL").optional(),
     customFields: z.record(z.any()).optional(),
   }),

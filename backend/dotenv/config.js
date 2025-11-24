@@ -3,7 +3,7 @@ import fs from "fs";
 import path from "path";
 
 // Load environment variables
-dotenv.config();
+dotenv.config({path: '../.env'});
 
 /**
  * Environment Configuration and Validation

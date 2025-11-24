@@ -54,7 +54,7 @@ const router = express.Router();
 
 // Apply authentication and admin authorization middleware to all routes
 router.use(protect);
-router.use(authorize("superadmin"));
+router.use(authorize("superadmin", "vendor"));
 
 /**
  * @route GET /api/v1/barcodes

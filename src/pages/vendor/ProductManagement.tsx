@@ -1,14 +1,21 @@
 import React, { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DataTable } from "@/components/DataTable";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { AddProductModal } from "@/components/modals/AddProductModal";
 import { ViewProductModal } from "@/components/modals/ViewProductModal";
 import { EditProductModal } from "@/components/modals/EditProductModal";
+import { BarcodeModal } from "@/components/modals/BarcodeModal";
+import { StatusFilter } from "@/components/StatusFilter";
+import { VendorFilter } from "@/components/ui/VendorFilter";
+import {
+  BarcodeButtonLoadingState,
+  BarcodeOperationStatus,
+} from "@/components/ui/BarcodeLoadingState";
+import { useBarcodeOperations } from "@/hooks/useBarcodeOperations";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
+import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import * as productService from "@/services/productService";
-import { Product } from "@/types";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   formatDate,
@@ -16,136 +23,52 @@ import {
   getStockBadgeVariant,
   getLowStockThreshold,
 } from "@/lib/utils";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import * as productService from "@/services/productService";
+import * as barcodeService from "@/services/barcodeService";
+import { Product } from "@/types";
+import { Printer, X, Loader2 } from "lucide-react";
+
+// Product status options for filtering
+const PRODUCT_STATUS_OPTIONS = [
+  { value: "all", label: "All" },
+  { value: "active", label: "Active" },
+  { value: "inactive", label: "Inactive" },
+  { value: "draft", label: "Draft" },
+  { value: "out_of_stock", label: "Out of Stock" },
+];
+
+type ProductStatus = "all" | "active" | "inactive" | "draft" | "out_of_stock";
 
 export function ProductManagement() {
   const queryClient = useQueryClient();
-  const { toast } = useToast();
-
+  const { user } = useAuth();
+  const { data, isLoading, isError, error } = useQuery({
+    queryKey: ["products"],
+    queryFn: () => productService.getProducts(),
+  });
+  const products: Product[] = data?.products || [];
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [orderLinkageDialogOpen, setOrderLinkageDialogOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [orderLinkageData, setOrderLinkageData] = useState<any>(null);
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [statusFilter, setStatusFilter] = useState<ProductStatus>("all");
+  const [vendorFilter, setVendorFilter] = useState<string>("all");
+  const [barcodeModalOpen, setBarcodeModalOpen] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  const { toast } = useToast();
+  const { state: barcodeState, generateBulkBarcodes } = useBarcodeOperations();
 
-  const {
-    data: productsData,
-    isLoading,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: ["products"],
-    queryFn: () => productService.getProducts(),
-  });
-  const products = productsData?.data?.products || [];
-
-  const createMutation = useMutation({
-    mutationFn: (vars: { product: Partial<Product>; imageFile: File | null }) =>
-      productService.createProduct(vars.product, vars.imageFile),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-
-      // Show success message
-      toast({ title: "Success", description: "Product created successfully." });
-
-      setAddModalOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({
-      id,
-      data,
-      imageFile,
-    }: {
-      id: string;
-      data: Partial<Product>;
-      imageFile: File | null;
-    }) => productService.updateProduct(id, data, imageFile),
-    onSuccess: (response) => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-
-      // Show success message
-      toast({ title: "Success", description: "Product updated successfully." });
-
-      setEditModalOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const checkOrderLinkageMutation = useMutation({
-    mutationFn: productService.checkProductOrderLinkage,
-    onSuccess: (data) => {
-      setOrderLinkageData(data.data);
-      if (data.data.hasLinkedOrders) {
-        setOrderLinkageDialogOpen(true);
-      } else {
-        setDeleteDialogOpen(true);
-      }
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: productService.deleteProduct,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast({ title: "Success", description: "Product deleted successfully." });
-      setDeleteDialogOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  const archiveMutation = useMutation({
-    mutationFn: productService.archiveProduct,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["products"] });
-      toast({
-        title: "Success",
-        description: "Product archived successfully.",
-      });
-      setOrderLinkageDialogOpen(false);
-    },
-    onError: (error) => {
-      toast({
-        title: "Error",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
+  // Check if user is admin for barcode features
+  const isAdmin = user?.role === "vendor";
 
   const columns = [
     {
       key: "images",
       header: "Image",
-      sortable: false, // No business value in sorting images
+      sortable: false, // Images are not sortable
       render: (_: unknown, product: Product) => (
         <div className="w-12 h-12 rounded-md overflow-hidden bg-gray-100 flex items-center justify-center">
           {product.images && product.images.length > 0 ? (
@@ -169,22 +92,47 @@ export function ProductManagement() {
     {
       key: "name",
       header: "Product Name",
-      sortable: true, // Essential for finding products quickly
-      render: (value: unknown) => (
-        <span className="font-medium">{String(value)}</span>
+      sortable: true, // Essential for finding specific products
+      render: (value: string) => (
+        <span className="whitespace-nowrap font-medium">{value}</span>
+      ),
+    },
+    {
+      key: "vendor.businessName",
+      header: "Vendor",
+      sortable: true, // Important for organizing by vendor
+      render: (_: unknown, row: Product) => (
+        <span className="whitespace-nowrap">{row.vendor?.businessName}</span>
       ),
     },
     {
       key: "price",
       header: "Price",
-      sortable: true, // Essential for pricing strategy and competitive analysis
-      render: (value: unknown) => `$${Number(value).toLocaleString()}`,
+      sortable: true, // Critical for price analysis and comparison
+      render: (value: number, row: Product) => (
+        <div className="flex flex-col whitespace-nowrap">
+          <span
+            className={
+              row.discountPrice
+                ? "line-through text-muted-foreground text-sm"
+                : "font-semibold"
+            }
+          >
+            ${value}
+          </span>
+          {row.discountPrice && (
+            <span className="text-green-600 font-semibold">
+              ${row.discountPrice}
+            </span>
+          )}
+        </div>
+      ),
     },
     {
       key: "stock",
       header: "Stock",
-      sortable: true, // Critical for inventory management and restocking decisions
-      render: (value: unknown, product: Product) => {
+      sortable: true, // Essential for inventory management
+      render: (value: number, product: Product) => {
         const currentStock = Number(value);
         const lowStockThreshold = getLowStockThreshold(product);
         const stockStatus = getStockStatus(currentStock, lowStockThreshold);
@@ -210,44 +158,50 @@ export function ProductManagement() {
     {
       key: "category",
       header: "Category",
-      sortable: false, // Better handled by filtering, not sorting
-      render: (value: unknown) => {
-        const category = String(value);
-        if (!category || category.toLowerCase() === "n/a") return "N/A";
-        return category.charAt(0).toUpperCase() + category.slice(1);
-      },
+      sortable: true, // Useful for organizing products by category
+      render: (value: string) => (
+        <span className="whitespace-nowrap">{value}</span>
+      ),
     },
     {
       key: "length",
       header: "Length",
-      sortable: false, // Rarely needed for business operations
-      render: (value: unknown) => (value ? `${value} cm` : "-"),
+      sortable: true, // Useful for shipping and dimension analysis
+      render: (value: unknown) => (
+        <span className="whitespace-nowrap">{value ? `${value} cm` : "-"}</span>
+      ),
     },
     {
       key: "breadth",
       header: "Breadth",
-      sortable: false, // Rarely needed for business operations
-      render: (value: unknown) => (value ? `${value} cm` : "-"),
+      sortable: true, // Useful for shipping and dimension analysis
+      render: (value: unknown) => (
+        <span className="whitespace-nowrap">{value ? `${value} cm` : "-"}</span>
+      ),
     },
     {
       key: "height",
       header: "Height",
-      sortable: false, // Rarely needed for business operations
-      render: (value: unknown) => (value ? `${value} cm` : "-"),
+      sortable: true, // Useful for shipping and dimension analysis
+      render: (value: unknown) => (
+        <span className="whitespace-nowrap">{value ? `${value} cm` : "-"}</span>
+      ),
     },
     {
       key: "weight",
       header: "Weight",
-      sortable: false, // Rarely needed for business operations
-      render: (value: unknown) => (value ? `${value} kg` : "-"),
+      sortable: true, // Important for shipping cost calculations
+      render: (value: unknown) => (
+        <span className="whitespace-nowrap">{value ? `${value} kg` : "-"}</span>
+      ),
     },
     {
       key: "inventory.lowStockThreshold",
       header: "Low Stock Threshold",
-      sortable: false, // Configuration value, not business-critical to sort
+      sortable: false, // Configuration value, less useful to sort
       render: (_: unknown, row: Product) => (
         <span className="whitespace-nowrap">
-          {(row as any).inventory?.lowStockThreshold || "-"}
+          {row.inventory?.lowStockThreshold || "-"}
         </span>
       ),
     },
@@ -256,28 +210,13 @@ export function ProductManagement() {
       header: "Status",
       sortable: true, // Important for product lifecycle management
       render: (_: unknown, row: Product) => {
-        // Determine status based on stock levels if not provided by backend
-        let status = (row as any).status;
-
-        if (!status) {
-          const currentStock = Number(row.stock);
-          const lowStockThreshold = getLowStockThreshold(row);
-          const stockStatus = getStockStatus(currentStock, lowStockThreshold);
-
-          if (stockStatus === "out_of_stock") {
-            status = "out_of_stock";
-          } else {
-            status = "active"; // Default to active for in-stock products
-          }
-        }
-
+        const status = (row as any).status;
         const statusColors = {
           active: "bg-green-100 text-green-800",
           inactive: "bg-red-100 text-red-800",
           draft: "bg-yellow-100 text-yellow-800",
           out_of_stock: "bg-gray-100 text-gray-800",
         };
-
         return (
           <Badge
             className={
@@ -285,7 +224,7 @@ export function ProductManagement() {
               "bg-gray-100 text-gray-800"
             }
           >
-            {status ? status.replace("_", " ").toUpperCase() : "ACTIVE"}
+            {status ? status.replace("_", " ").toUpperCase() : "UNKNOWN"}
           </Badge>
         );
       },
@@ -294,15 +233,38 @@ export function ProductManagement() {
       key: "createdAt",
       header: "Created",
       sortable: false, // Less frequently needed for business operations
-      render: (value: unknown) => formatDate(String(value)),
+      render: (value: string) => (
+        <span className="text-muted-foreground">{formatDate(value)}</span>
+      ),
     },
   ];
 
-  const handleAdd = () => setAddModalOpen(true);
+  const handleAdd = () => {
+    setAddModalOpen(true);
+  };
+
+  const addMutation = useMutation({
+    mutationFn: (vars: { product: Partial<Product>; imageFile: File | null }) =>
+      productService.createProduct(vars.product, vars.imageFile),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast({ title: "Success", description: "Product created successfully." });
+      setAddModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to create product",
+        variant: "destructive",
+      });
+    },
+  });
   const handleAddProduct = (
     product: Partial<Product>,
     imageFile: File | null
-  ) => createMutation.mutate({ product, imageFile });
+  ) => {
+    addMutation.mutate({ product, imageFile });
+  };
 
   const handleView = (product: Product) => {
     setSelectedProduct(product);
@@ -314,12 +276,34 @@ export function ProductManagement() {
     setEditModalOpen(true);
   };
 
+  const editMutation = useMutation({
+    mutationFn: (vars: {
+      id: string;
+      data: Partial<Product>;
+      imageFile: File | null;
+    }) => productService.updateProduct(vars.id, vars.data, vars.imageFile),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+
+      // Show success message
+      toast({ title: "Success", description: "Product updated successfully." });
+
+      setEditModalOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update product",
+        variant: "destructive",
+      });
+    },
+  });
   const handleEditProduct = (
     updatedProduct: Partial<Product>,
     imageFile: File | null
   ) => {
     if (selectedProduct?._id) {
-      updateMutation.mutate({
+      editMutation.mutate({
         id: selectedProduct._id,
         data: updatedProduct,
         imageFile,
@@ -329,55 +313,270 @@ export function ProductManagement() {
 
   const handleDelete = (product: Product) => {
     setSelectedProduct(product);
-    // Check for order linkage first
-    if (product._id) {
-      checkOrderLinkageMutation.mutate(product._id);
-    }
+    setDeleteDialogOpen(true);
   };
 
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => productService.deleteProduct(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["products"] });
+      toast({ title: "Success", description: "Product deleted successfully." });
+      setDeleteDialogOpen(false);
+      setSelectedProduct(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete product",
+        variant: "destructive",
+      });
+    },
+  });
   const confirmDelete = () => {
     if (selectedProduct?._id) {
       deleteMutation.mutate(selectedProduct._id);
     }
   };
 
-  if (isError) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Product Management
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your product catalog and inventory
-          </p>
-        </div>
-        <div className="p-4 border border-red-200 rounded-lg bg-red-50">
-          <h3 className="text-red-800 font-medium">Error fetching products</h3>
-          <p className="text-red-600 text-sm mt-1">
-            {error?.message || "An unknown error occurred"}
-          </p>
-        </div>
-      </div>
+  // Helper function to filter products
+  const getFilteredProducts = React.useCallback(
+    (statusVal: string, vendorVal: string) => {
+      return products.filter((product: Product) => {
+        const status = (product as any).status;
+        const vendorName = product.vendor?.businessName;
+        const statusMatch = statusVal === "all" || status === statusVal;
+        const vendorMatch = vendorVal === "all" || vendorName === vendorVal;
+        return statusMatch && vendorMatch;
+      });
+    },
+    [products]
+  );
+
+  const handleStatusChange = (value: string) => {
+    setStatusFilter(value as ProductStatus);
+    // Clear selections that are no longer visible due to filter change
+    if (selectedProducts.length > 0) {
+      const newFilteredProducts = getFilteredProducts(value, vendorFilter);
+
+      const filteredProductIds = new Set(
+        newFilteredProducts.map((p) => p._id || p.id)
+      );
+      const visibleSelections = selectedProducts.filter((product) =>
+        filteredProductIds.has(product._id || product.id)
+      );
+
+      if (visibleSelections.length !== selectedProducts.length) {
+        setSelectedProducts(visibleSelections);
+        if (visibleSelections.length === 0 && selectedProducts.length > 0) {
+          toast({
+            title: "Selections cleared",
+            description:
+              "Selected products are no longer visible with current filters",
+            variant: "default",
+          });
+        }
+      }
+    }
+  };
+
+  const handleVendorChange = (value: string) => {
+    setVendorFilter(value);
+    // Clear selections that are no longer visible due to filter change
+    if (selectedProducts.length > 0) {
+      const newFilteredProducts = getFilteredProducts(statusFilter, value);
+
+      const filteredProductIds = new Set(
+        newFilteredProducts.map((p) => p._id || p.id)
+      );
+      const visibleSelections = selectedProducts.filter((product) =>
+        filteredProductIds.has(product._id || product.id)
+      );
+
+      if (visibleSelections.length !== selectedProducts.length) {
+        setSelectedProducts(visibleSelections);
+        if (visibleSelections.length === 0 && selectedProducts.length > 0) {
+          toast({
+            title: "Selections cleared",
+            description:
+              "Selected products are no longer visible with current filters",
+            variant: "default",
+          });
+        }
+      }
+    }
+  };
+
+  // Filter products by status and vendor
+  const filteredProducts = React.useMemo(() => {
+    return getFilteredProducts(statusFilter, vendorFilter);
+  }, [getFilteredProducts, statusFilter, vendorFilter]);
+
+  const handleSelectionChange = (selectedItems: Product[]) => {
+    setSelectedProducts(selectedItems);
+  };
+
+  const handlePrintBarcode = async () => {
+    // Extract product IDs from selected products
+    const productIds = selectedProducts
+      .map((product) => product._id || product.id)
+      .filter(Boolean) as string[];
+
+    // Generate barcodes using the hook
+    const result = await generateBulkBarcodes(productIds);
+
+    if (result.success) {
+      // Open barcode print modal with selected products
+      setBarcodeModalOpen(true);
+    }
+  };
+
+  const handleClearSelection = () => {
+    setSelectedProducts([]);
+    toast({
+      title: "Selection cleared",
+      description: "All product selections have been cleared",
+      variant: "default",
+    });
+  };
+
+  const handleBarcodeSelectionChange = (products: Product[]) => {
+    setSelectedProducts(products);
+  };
+
+  const handleBarcodeModalPrint = async (
+    barcodeProducts: Array<{ product: Product; quantity: number }>
+  ) => {
+    setPdfGenerating(true);
+
+    try {
+      const {
+        generateBarcodePDF,
+        downloadPDF,
+        generatePDFFilename,
+        validatePDFGeneration,
+      } = await import("@/lib/pdf-utils");
+
+      // Validate input
+      const validation = validatePDFGeneration(barcodeProducts);
+      if (!validation.isValid) {
+        toast({
+          title: "Validation Error",
+          description: validation.errors.join(", "),
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Show warnings if any
+      if (validation.warnings.length > 0) {
+        toast({
+          title: "Warning",
+          description: validation.warnings.join(", "),
+          variant: "default",
+        });
+      }
+
+      // Calculate total barcodes
+      const totalBarcodes = barcodeProducts.reduce(
+        (total, item) => total + item.quantity,
+        0
+      );
+
+      // Generate PDF
+      const result = await generateBarcodePDF(barcodeProducts, {
+        pageSize: "a4",
+        orientation: "portrait",
+        rows: 8,
+        columns: 3,
+        showProductInfo: true,
+        showPrice: true,
+        showVendor: false,
+      });
+
+      if (result.success && result.pdfBlob) {
+        // Generate filename and download
+        const filename = generatePDFFilename(barcodeProducts);
+        downloadPDF(result.pdfBlob, filename);
+
+        // Close the modal after successful generation
+        setBarcodeModalOpen(false);
+      } else {
+        throw new Error(result.error || "Failed to generate PDF");
+      }
+    } catch (error) {
+      console.error("PDF generation failed:", error);
+      toast({
+        title: "PDF Generation Failed",
+        description:
+          error instanceof Error ? error.message : "An unknown error occurred",
+        variant: "destructive",
+      });
+    } finally {
+      setPdfGenerating(false);
+    }
+  };
+
+  // Count of visible selected products
+  const visibleSelectedCount = React.useMemo(() => {
+    const visibleProductIds = new Set(
+      filteredProducts.map((p) => p._id || p.id)
     );
-  }
+    return selectedProducts.filter((product) =>
+      visibleProductIds.has(product._id || product.id)
+    ).length;
+  }, [filteredProducts, selectedProducts]);
+
+  // Generate vendor options from products
+  const vendorOptions = React.useMemo(() => {
+    const uniqueVendors = Array.from(
+      new Set(
+        products.map((product) => product.vendor?.businessName).filter(Boolean)
+      )
+    ).sort();
+
+    return [
+      { value: "all", label: "All Vendors" },
+      ...uniqueVendors.map((vendorName) => ({
+        value: vendorName,
+        label: vendorName,
+      })),
+    ];
+  }, [products]);
+
+  // Create filter component
+  const filterComponent = (
+    <div className="flex items-center gap-4">
+      <StatusFilter
+        value={statusFilter}
+        onValueChange={handleStatusChange}
+        options={PRODUCT_STATUS_OPTIONS}
+        placeholder="Filter by status"
+        label="Status"
+      />
+      <VendorFilter
+        value={vendorFilter}
+        onValueChange={handleVendorChange}
+        options={vendorOptions}
+        placeholder="All vendors"
+        label="Vendor"
+      />
+    </div>
+  );
 
   if (isLoading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Product Management
-          </h1>
-          <p className="text-muted-foreground">
-            Manage your product catalog and inventory
-          </p>
-        </div>
-        <Skeleton className="h-96 w-full" data-testid="skeleton" />
+      <div className="py-10 text-center text-muted-foreground">
+        Loading products...
       </div>
     );
   }
-
+  if (isError) {
+    return (
+      <div className="py-10 text-center text-red-500">
+        {error instanceof Error ? error.message : "Failed to load products"}
+      </div>
+    );
+  }
   return (
     <div className="space-y-6">
       <div>
@@ -385,46 +584,116 @@ export function ProductManagement() {
           Product Management
         </h1>
         <p className="text-muted-foreground">
-          Manage your product catalog and inventory
+          Manage all products across all vendors
         </p>
       </div>
 
+      {/* Print Barcode Button - appears when products are selected (Admin only) */}
+      {selectedProducts.length > 0 && (
+        <div className="flex items-center justify-between bg-muted border rounded-lg p-4">
+          <div className="flex items-center gap-4">
+            <div className="text-sm font-medium text-foreground">
+              {selectedProducts.length} product
+              {selectedProducts.length > 1 ? "s" : ""} selected
+              {visibleSelectedCount !== selectedProducts.length && (
+                <span className="text-muted-foreground font-normal">
+                  {" "}
+                  ({visibleSelectedCount} visible)
+                </span>
+              )}
+            </div>
+            <BarcodeOperationStatus
+              isLoading={barcodeState.isLoading}
+              status={barcodeState.status}
+              message={barcodeState.message}
+              progress={barcodeState.progress}
+              className="text-xs"
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              onClick={handlePrintBarcode}
+              size="sm"
+              disabled={barcodeState.isLoading}
+            >
+              <BarcodeButtonLoadingState
+                isLoading={barcodeState.isLoading}
+                loadingText="Generating..."
+                defaultText="Print Barcode"
+                icon="printer"
+                size="sm"
+              />
+            </Button>
+            <Button
+              onClick={handleClearSelection}
+              variant="ghost"
+              size="sm"
+              title="Clear all selections"
+              disabled={barcodeState.isLoading}
+            >
+              <X className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Selection Summary - appears when there are hidden selections */}
+      {selectedProducts.length > 0 &&
+        visibleSelectedCount < selectedProducts.length && (
+          <div className="bg-secondary border rounded-lg p-3">
+            <div className="flex items-center gap-2 text-sm text-secondary-foreground">
+              <span className="font-medium">
+                Note: {selectedProducts.length - visibleSelectedCount} selected
+                products are hidden by current filters
+              </span>
+              <Button
+                onClick={() => {
+                  setStatusFilter("all");
+                  setVendorFilter("all");
+                }}
+                variant="link"
+                size="sm"
+                className="p-0 h-auto font-normal underline"
+              >
+                Show all products
+              </Button>
+            </div>
+          </div>
+        )}
+
       <DataTable
-        data={products as any[]}
-        columns={columns as any[]}
+        data={filteredProducts}
+        columns={columns}
         searchKey="name"
-        searchPlaceholder="Search your products..."
+        searchPlaceholder="Search products..."
         addButtonText="Add Product"
         onAdd={handleAdd}
-        onView={handleView as any}
-        onEdit={handleEdit as any}
-        onDelete={handleDelete as any}
+        onView={handleView}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        filterComponent={filterComponent}
+        enableSelection={isAdmin && !barcodeState.isLoading}
+        selectedItems={selectedProducts}
+        onSelectionChange={handleSelectionChange}
       />
-
       <AddProductModal
         open={addModalOpen}
         onOpenChange={setAddModalOpen}
         onAdd={handleAddProduct}
       />
-
-      {selectedProduct && (
-        <ViewProductModal
-          open={viewModalOpen}
-          onOpenChange={setViewModalOpen}
-          product={selectedProduct}
-        />
-      )}
-      {selectedProduct && (
-        <EditProductModal
-          key={selectedProduct._id}
-          open={editModalOpen}
-          onOpenChange={setEditModalOpen}
-          product={selectedProduct}
-          onEdit={handleEditProduct}
-          isLoading={updateMutation.isPending}
-        />
-      )}
-
+      <ViewProductModal
+        open={viewModalOpen}
+        onOpenChange={setViewModalOpen}
+        product={selectedProduct}
+      />
+      <EditProductModal
+        key={selectedProduct?._id}
+        open={editModalOpen}
+        onOpenChange={setEditModalOpen}
+        product={selectedProduct}
+        onEdit={handleEditProduct}
+        isLoading={editMutation.isPending}
+      />
       <ConfirmDialog
         open={deleteDialogOpen}
         onOpenChange={setDeleteDialogOpen}
@@ -432,60 +701,13 @@ export function ProductManagement() {
         description={`Are you sure you want to delete ${selectedProduct?.name}? This action cannot be undone.`}
         onConfirm={confirmDelete}
       />
-
-      <ConfirmDialog
-        open={orderLinkageDialogOpen}
-        onOpenChange={setOrderLinkageDialogOpen}
-        title="Cannot Delete Product"
-        description={
-          orderLinkageData ? (
-            <div className="space-y-3">
-              <p className="text-sm text-muted-foreground">
-                This product cannot be deleted because it is linked to{" "}
-                <span className="font-semibold text-foreground">
-                  {orderLinkageData.linkedOrdersCount}
-                </span>{" "}
-                existing order
-                {orderLinkageData.linkedOrdersCount > 1 ? "s" : ""}.
-              </p>
-              {orderLinkageData.linkedOrders &&
-                orderLinkageData.linkedOrders.length > 0 && (
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium">Recent orders:</p>
-                    <div className="space-y-1">
-                      {orderLinkageData.linkedOrders.map(
-                        (order: any, index: number) => (
-                          <div
-                            key={index}
-                            className="text-xs bg-muted p-2 rounded"
-                          >
-                            <span className="font-mono">
-                              {order.orderNumber}
-                            </span>{" "}
-                            - {order.status}
-                          </div>
-                        )
-                      )}
-                    </div>
-                  </div>
-                )}
-              <p className="text-sm text-muted-foreground">
-                To remove this product, you can archive it instead. This will
-                hide it from your active products while preserving order
-                history.
-              </p>
-            </div>
-          ) : (
-            "This product cannot be deleted because it is linked to existing orders."
-          )
-        }
-        confirmText="Archive Product"
-        cancelText="Cancel"
-        onConfirm={() => {
-          if (selectedProduct?._id) {
-            archiveMutation.mutate(selectedProduct._id);
-          }
-        }}
+      <BarcodeModal
+        open={barcodeModalOpen}
+        onOpenChange={setBarcodeModalOpen}
+        selectedProducts={selectedProducts}
+        onPrintBarcode={handleBarcodeModalPrint}
+        onSelectionChange={handleBarcodeSelectionChange}
+        isLoading={pdfGenerating}
       />
     </div>
   );

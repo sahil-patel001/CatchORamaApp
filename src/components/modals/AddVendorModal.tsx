@@ -184,7 +184,7 @@ export function AddVendorModal({
                 htmlFor="gstRegistered"
                 className="flex items-center gap-2 cursor-pointer"
               >
-                GST Registered <span className="text-destructive">*</span>
+                GST Registered <span className="text-destructive"></span>
                 <Checkbox
                   id="gstRegistered"
                   checked={formData.gstRegistered}
@@ -194,7 +194,6 @@ export function AddVendorModal({
                       gstRegistered: Boolean(checked),
                     }))
                   }
-                  required
                   aria-label="GST Registered"
                 />
               </Label>

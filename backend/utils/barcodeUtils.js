@@ -100,7 +100,7 @@ export const generateBarcode = (vendorPrefix, productName, price) => {
   );
 
   // Generate final barcode
-  const barcode = `${cleanVendorPrefix}-${truncatedProductName}-${formattedPrice}`;
+  const barcode = `${formattedPrice}-${truncatedProductName}-${cleanVendorPrefix}`;
 
   // Final validation
   if (barcode.length > MAX_BARCODE_LENGTH) {
