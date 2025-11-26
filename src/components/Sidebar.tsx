@@ -220,7 +220,7 @@ export const Sidebar = React.memo(
             variant="ghost"
             onClick={handleLogout}
             className={cn(
-              "w-full text-destructive hover:text-destructive transition-all duration-200",
+              "w-full text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-950/30 transition-all duration-200",
               isCollapsed ? "h-9 w-9 p-0 justify-center" : "h-9 justify-start"
             )}
             aria-label={isCollapsed ? "Logout" : undefined}

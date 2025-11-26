@@ -87,13 +87,14 @@ const axiosConfig = {
 export const generateProductBarcode = async (
   request: BarcodeGenerateRequest
 ): Promise<BarcodeGenerateResponse> => {
-  const response = await api.post(
+  // api interceptor returns response.data => { success, data, message }
+  const body = await api.post(
     `/barcodes/generate`,
     request,
     axiosConfig
   );
 
-  return response.data;
+  return body as any;
 };
 
 /**
@@ -104,13 +105,14 @@ export const generateProductBarcode = async (
 export const generateBulkBarcodes = async (
   request: BulkBarcodeGenerateRequest
 ): Promise<BulkBarcodeGenerateResponse> => {
-  const response:BulkBarcodeGenerateResponse = await api.post(
+  // api interceptor returns response.data => { success, data, message }
+  const body: BulkBarcodeGenerateResponse = await api.post(
     `/barcodes/generate-bulk`,
     request,
     axiosConfig
   );
 
-  return response;
+  return body;
 };
 
 /**
@@ -121,13 +123,14 @@ export const generateBulkBarcodes = async (
 export const validateBarcode = async (
   request: BarcodeValidateRequest
 ): Promise<BarcodeValidateResponse> => {
-  const response = await api.post(
+  // api interceptor returns response.data => { success, data, message }
+  const body = await api.post(
     `/barcodes/validate`,
     request,
     axiosConfig
   );
 
-  return response.data;
+  return body as any;
 };
 
 /**
@@ -136,12 +139,13 @@ export const validateBarcode = async (
  * @returns Promise with product barcode information
  */
 export const getProductBarcode = async (productId: string) => {
-  const response = await api.get(
+  // api interceptor returns response.data => { success, data }
+  const body = await api.get(
     `/barcodes/product/${productId}`,
     axiosConfig
   );
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -150,13 +154,14 @@ export const getProductBarcode = async (productId: string) => {
  * @returns Promise with new barcode information
  */
 export const regenerateProductBarcode = async (productId: string) => {
-  const response = await api.put(
+  // api interceptor returns response.data => { success, data }
+  const body = await api.put(
     `/barcodes/regenerate/${productId}`,
     {},
     axiosConfig
   );
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -174,7 +179,8 @@ export const generateBarcodeImage = async (
     useCase?: string;
   } = {}
 ) => {
-  const response = await api.post(
+  // api interceptor returns response.data => { success, data }
+  const body = await api.post(
     `/barcodes/generate-image`,
     {
       barcodeText,
@@ -183,7 +189,7 @@ export const generateBarcodeImage = async (
     axiosConfig
   );
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -200,7 +206,8 @@ export const generateBulkBarcodeImages = async (
     useCase?: string;
   } = {}
 ) => {
-  const response = await api.post(
+  // api interceptor returns response.data => { success, data }
+  const body = await api.post(
     `/barcodes/generate-bulk-images`,
     {
       productIds,
@@ -209,7 +216,7 @@ export const generateBulkBarcodeImages = async (
     axiosConfig
   );
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -227,7 +234,8 @@ export const getProductBarcodeImage = async (
     regenerate?: boolean;
   } = {}
 ) => {
-  const response = await api.get(
+  // api interceptor returns response.data => { success, data }
+  const body = await api.get(
     `/barcodes/image/${productId}`,
     {
       ...axiosConfig,
@@ -235,7 +243,7 @@ export const getProductBarcodeImage = async (
     }
   );
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -243,12 +251,13 @@ export const getProductBarcodeImage = async (
  * @returns Promise with supported formats and options
  */
 export const getBarcodeFormats = async () => {
-  const response = await api.get(
+  // api interceptor returns response.data => { success, data }
+  const body = await api.get(
     `/barcodes/formats`,
     axiosConfig
   );
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -261,7 +270,8 @@ export const checkBarcodeUniqueness = async (
   barcode: string,
   excludeProductId?: string
 ) => {
-  const response = await api.post(
+  // api interceptor returns response.data => { success, data }
+  const body = await api.post(
     `/barcodes/check-uniqueness`,
     {
       barcode,
@@ -270,7 +280,7 @@ export const checkBarcodeUniqueness = async (
     axiosConfig
   );
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -285,7 +295,8 @@ export const validateBarcodeComprehensive = async (
   productData?: Record<string, any>,
   excludeProductId?: string
 ) => {
-  const response = await api.post(
+  // api interceptor returns response.data => { success, data }
+  const body = await api.post(
     `/barcodes/validate-comprehensive`,
     {
       barcode,
@@ -295,7 +306,7 @@ export const validateBarcodeComprehensive = async (
     axiosConfig
   );
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -303,12 +314,13 @@ export const validateBarcodeComprehensive = async (
  * @returns Promise with barcode statistics
  */
 export const getBarcodeStats = async () => {
-  const response = await api.get(
+  // api interceptor returns response.data => { success, data }
+  const body = await api.get(
     `/barcodes/stats`,
     axiosConfig
   );
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -325,7 +337,8 @@ export const searchBarcodes = async (
     includeInvalid?: boolean;
   } = {}
 ) => {
-  const response = await api.get(`${API_BASE_URL}/barcodes/search`, {
+  // api interceptor returns response.data => { success, data }
+  const body = await api.get(`${API_BASE_URL}/barcodes/search`, {
     ...axiosConfig,
     params: {
       q: query,
@@ -333,7 +346,7 @@ export const searchBarcodes = async (
     },
   });
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -348,7 +361,8 @@ export const updateProductBarcode = async (
   barcode: string,
   validateOnly: boolean = false
 ) => {
-  const response = await api.put(
+  // api interceptor returns response.data => { success, data }
+  const body = await api.put(
     `/barcodes/product/${productId}`,
     {
       barcode,
@@ -357,7 +371,7 @@ export const updateProductBarcode = async (
     axiosConfig
   );
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -366,12 +380,13 @@ export const updateProductBarcode = async (
  * @returns Promise with deletion result
  */
 export const deleteProductBarcode = async (productId: string) => {
-  const response = await api.delete(
+  // api interceptor returns response.data => { success, message }
+  const body = await api.delete(
     `${API_BASE_URL}/barcodes/product/${productId}`,
     axiosConfig
   );
 
-  return response.data;
+  return body as any;
 };
 
 /**
@@ -380,7 +395,8 @@ export const deleteProductBarcode = async (productId: string) => {
  * @returns Promise with bulk deletion results
  */
 export const bulkDeleteBarcodes = async (productIds: string[]) => {
-  const response = await api.post(
+  // api interceptor returns response.data => { success, data }
+  const body = await api.post(
     `/barcodes/bulk-delete`,
     {
       productIds,
@@ -388,7 +404,7 @@ export const bulkDeleteBarcodes = async (productIds: string[]) => {
     axiosConfig
   );
 
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -407,10 +423,11 @@ export const getAllBarcodes = async (
     sortOrder?: "asc" | "desc";
   } = {}
 ) => {
-  const response = await api.get(`${API_BASE_URL}/barcodes`, {
+  // api interceptor returns response.data => { success, data }
+  const body = await api.get(`${API_BASE_URL}/barcodes`, {
     ...axiosConfig,
     params: options,
   });
 
-  return response.data;
+  return (body as any).data;
 };

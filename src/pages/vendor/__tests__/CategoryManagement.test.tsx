@@ -22,11 +22,25 @@ const mockCategories = [
   },
 ];
 
+const mockCategoriesResponse = {
+  categories: mockCategories,
+  pagination: {
+    page: 1,
+    limit: 10,
+    total: 1,
+    pages: 1,
+  },
+};
+
 describe("CategoryManagement", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
   it("renders categories table", async () => {
-    (categoryService.getCategories as unknown as jest.Mock).mockResolvedValue({
-      data: { categories: mockCategories },
-    });
+    (categoryService.getCategories as unknown as jest.Mock).mockResolvedValue(
+      mockCategoriesResponse
+    );
     const queryClient = new QueryClient();
     render(
       <QueryClientProvider client={queryClient}>
@@ -36,6 +50,21 @@ describe("CategoryManagement", () => {
     expect(screen.getByText(/category management/i)).toBeInTheDocument();
     await waitFor(() =>
       expect(screen.getByText("Test Category")).toBeInTheDocument()
+    );
+  });
+
+  it("calls getCategories with pagination parameters for vendor role", async () => {
+    (categoryService.getCategories as unknown as jest.Mock).mockResolvedValue(
+      mockCategoriesResponse
+    );
+    const queryClient = new QueryClient();
+    render(
+      <QueryClientProvider client={queryClient}>
+        <CategoryManagement />
+      </QueryClientProvider>
+    );
+    await waitFor(() =>
+      expect(categoryService.getCategories).toHaveBeenCalledWith(undefined, 1, 10)
     );
   });
 

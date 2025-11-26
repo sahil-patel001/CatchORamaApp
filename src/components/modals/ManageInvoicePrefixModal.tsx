@@ -97,60 +97,62 @@ export function ManageInvoicePrefixModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-w-2xl w-full max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Manage Vendor Prefix</DialogTitle>
         </DialogHeader>
 
         {vendor && (
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <div className="text-sm text-muted-foreground">
-                <strong>Vendor:</strong>{" "}
-                {vendor.businessName || vendor.userId?.name}
+          <div className="flex-grow overflow-y-auto thin-scrollbar -mr-1 pr-4 modal-form-container">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <div className="text-sm text-muted-foreground">
+                  <strong>Vendor:</strong>{" "}
+                  {vendor.businessName || vendor.userId?.name}
+                </div>
+                <div className="text-sm text-muted-foreground">
+                  <strong>Email:</strong> {vendor.userId?.email}
+                </div>
               </div>
-              <div className="text-sm text-muted-foreground">
-                <strong>Email:</strong> {vendor.userId?.email}
-              </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="prefix">
+                    Vendor Prefix <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="prefix"
+                    value={prefix}
+                    onChange={(e) => setPrefix(e.target.value.toUpperCase())}
+                    placeholder="e.g., VD01, VD02, ABC1"
+                    maxLength={10}
+                    disabled={fetchingPrefix || loading}
+                    required
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Alphanumeric characters only, 2-10 characters. This will be
+                    used for barcodes and invoices: {prefix}-ProductName-Price$
+                  </p>
+                </div>
+
+                <div className="flex justify-end space-x-2 pt-4">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => onOpenChange(false)}
+                    disabled={loading}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="submit"
+                    disabled={loading || fetchingPrefix || !hasChanges}
+                  >
+                    {loading ? "Updating..." : "Update Prefix"}
+                  </Button>
+                </div>
+              </form>
             </div>
-
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid gap-2">
-                <Label htmlFor="prefix">
-                  Vendor Prefix <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="prefix"
-                  value={prefix}
-                  onChange={(e) => setPrefix(e.target.value.toUpperCase())}
-                  placeholder="e.g., VD01, VD02, ABC1"
-                  maxLength={10}
-                  disabled={fetchingPrefix || loading}
-                  required
-                />
-                <p className="text-xs text-muted-foreground">
-                  Alphanumeric characters only, 2-10 characters. This will be
-                  used for barcodes and invoices: {prefix}-ProductName-Price$
-                </p>
-              </div>
-
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => onOpenChange(false)}
-                  disabled={loading}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={loading || fetchingPrefix || !hasChanges}
-                >
-                  {loading ? "Updating..." : "Update Prefix"}
-                </Button>
-              </div>
-            </form>
           </div>
         )}
       </DialogContent>

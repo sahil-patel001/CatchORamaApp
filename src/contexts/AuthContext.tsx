@@ -24,7 +24,7 @@ interface AuthContextType {
     businessName?: string
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
-  refresh:() => Promise<void>;
+  refresh: () => Promise<{ success: boolean; error?: string } | void>;
   changePassword: (
     currentPassword: string | undefined,
     newPassword: string
@@ -42,21 +42,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const isAuthChecked = useRef(false);
+  const refreshTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // Start: Private Section
-  let refreshTimer;
-
-  const startTokenRefreshTimer = () => {
-    const decoded = parseJwt(localStorage.getItem("token"));
-    const expiresIn = decoded.exp * 1000 - Date.now() - 5000; // refresh 5s early
-    refreshTimer = setTimeout(() => refresh(), expiresIn);
-  };
-
-  const stopTokenRefreshTimer = () => {
-    if (refreshTimer) clearTimeout(refreshTimer);
-  };
-
-  const parseJwt = (token) => {
+  // Helper to parse JWT payload
+  const parseJwt = (token: string | null) => {
+    if (!token) return {};
     try {
       return JSON.parse(atob(token.split(".")[1]));
     } catch {
@@ -64,38 +54,121 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const setAuthContext = (data) => {
+  // Stop the token refresh timer
+  const stopTokenRefreshTimer = useCallback(() => {
+    if (refreshTimerRef.current) {
+      clearTimeout(refreshTimerRef.current);
+      refreshTimerRef.current = null;
+    }
+  }, []);
+
+  // Reset auth context (clear user, tokens, timer)
+  const resetAuthContext = useCallback(() => {
+    setUser(null);
+    setIsLoading(false);
+    stopTokenRefreshTimer();
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+  }, [stopTokenRefreshTimer]);
+
+  // Refresh function - defined early so startTokenRefreshTimer can reference it
+  const refreshTokens = useCallback(async (): Promise<{ success: boolean; error?: string } | void> => {
+    const storedRefreshToken = localStorage.getItem("refreshToken");
+    if (!storedRefreshToken) {
+      resetAuthContext();
+      return { success: false, error: "No refresh token available" };
+    }
+
+    try {
+      const res = await authService.getRefresh();
+      if (res.success && res.data?.user && res.data?.token && res.data?.refreshToken) {
+        setUser(res.data.user);
+        localStorage.setItem('token', res.data.token);
+        localStorage.setItem('refreshToken', res.data.refreshToken);
+        setIsLoading(false);
+        // Schedule next refresh
+        const decoded = parseJwt(res.data.token);
+        if (decoded.exp) {
+          const expiresIn = decoded.exp * 1000 - Date.now() - 60000; // refresh 1 min early
+          if (expiresIn > 0) {
+            refreshTimerRef.current = setTimeout(() => refreshTokens(), expiresIn);
+          }
+        }
+        return { success: true };
+      } else {
+        resetAuthContext();
+        return { success: false, error: res.message || "Session expired!" };
+      }
+    } catch {
+      resetAuthContext();
+      return { success: false, error: "Failed to refresh session" };
+    }
+  }, [resetAuthContext]);
+
+  // Start the token refresh timer based on current token expiry
+  const startTokenRefreshTimer = useCallback(() => {
+    stopTokenRefreshTimer();
+    const token = localStorage.getItem("token");
+    const decoded = parseJwt(token);
+    if (decoded.exp) {
+      const expiresIn = decoded.exp * 1000 - Date.now() - 60000; // refresh 1 min early
+      if (expiresIn > 0) {
+        refreshTimerRef.current = setTimeout(() => refreshTokens(), expiresIn);
+      }
+    }
+  }, [stopTokenRefreshTimer, refreshTokens]);
+
+  // Set auth context with guards for missing/invalid tokens
+  const setAuthContext = useCallback((data: { user: User; token: string; refreshToken: string }) => {
+    if (!data.user || !data.token || !data.refreshToken) {
+      console.warn("setAuthContext called with incomplete data");
+      return;
+    }
     setUser(data.user);
     localStorage.setItem('token', data.token);
     localStorage.setItem('refreshToken', data.refreshToken);
     setIsLoading(false);
-  }
+    startTokenRefreshTimer();
+  }, [startTokenRefreshTimer]);
 
-  const resetAuthContext = () => {
-    setUser(null);
-    setIsLoading(false);
-    localStorage.clear();
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-  }
+  // Check auth on mount - try /auth/me, if it fails try refresh once before logging out
+  const checkAuth = useCallback(async () => {
+    const token = localStorage.getItem("token");
+    const storedRefreshToken = localStorage.getItem("refreshToken");
 
-  const checkAuth = async () => {
+    // No tokens at all - not authenticated
+    if (!token && !storedRefreshToken) {
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     isAuthChecked.current = true;
+
     try {
       const res = await authService.getMe();
       if (res.success && res.data?.user) {
         setUser(res.data.user);
-        return true;
+        setIsLoading(false);
+        startTokenRefreshTimer();
+        return;
       }
-      throw new Error("session expired!");
+      throw new Error("Invalid session");
     } catch {
+      // /auth/me failed - try refresh if we have a refresh token
+      if (storedRefreshToken) {
+        const refreshResult = await refreshTokens();
+        if (refreshResult?.success) {
+          return; // Successfully refreshed
+        }
+      }
+      // Refresh failed or no refresh token - clear auth
       resetAuthContext();
     }
-  };
+  }, [startTokenRefreshTimer, refreshTokens, resetAuthContext]);
 
   useEffect(() => {
-    // On mount, check if user is authenticated via cookie
+    // On mount, check if user is authenticated
     if (isAuthChecked.current) return;
     checkAuth();
   }, [checkAuth]);
@@ -104,9 +177,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true);
     try {
       const res = await authService.login(email, password);
-      if (res.success && res.data?.user) {
+      if (res.success && res.data?.user && res.data?.token && res.data?.refreshToken) {
         setAuthContext(res.data);
-        startTokenRefreshTimer();
         return { success: true };
       } else {
         resetAuthContext();
@@ -134,7 +206,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
       return { success: false, error: errorMsg };
     }
-  }, []);
+  }, [setAuthContext, resetAuthContext]);
 
   const signup = useCallback(
     async (
@@ -153,9 +225,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           role,
           businessName
         );
-        if (res.success && res.data?.user) {
-          setUser(res.data.user);
-          setIsLoading(false);
+        if (res.success && res.data?.user && res.data?.token && res.data?.refreshToken) {
+          setAuthContext(res.data);
           return { success: true };
         } else {
           resetAuthContext();
@@ -185,7 +256,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return { success: false, error: errorMsg };
       }
     },
-    []
+    [setAuthContext, resetAuthContext]
   );
   const logout = useCallback(async () => {
     setIsLoading(true);
@@ -193,29 +264,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       await authService.logout();
     } catch {
       // Ignore errors on logout
-    }
-    finally {
+    } finally {
       resetAuthContext();
-      stopTokenRefreshTimer();
     }
-    
-  }, []);
+  }, [resetAuthContext]);
 
-  const refresh = useCallback(async () => {
-    try {
-      const res = await authService.getRefresh();
-      if (res.success && res.data?.user) {
-        setAuthContext(res.data);
-        startTokenRefreshTimer();
-        return { success: true };
-      } else {
-        resetAuthContext();
-        return { success: false, error: res.message || "Session expired!" };
-      }
-    } catch (err: unknown) {
-      resetAuthContext();
-    }
-  },[]);
+  // Expose refresh function (uses refreshTokens internally)
+  const refresh = refreshTokens;
 
   const changePassword = useCallback(
     async (currentPassword: string | undefined, newPassword: string) => {

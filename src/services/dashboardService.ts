@@ -1,14 +1,12 @@
-import axios from "axios";
 import api from "./api";
 
 const API_BASE_URL = `/dashboard`;
 
-// Utility to add the authorization token to requests
-const getAuthHeaders = () => {
-  const token = localStorage.getItem("token");
-  return token ? { Authorization: `Bearer ${token}` } : {};
-};
-
+/**
+ * Fetches admin dashboard statistics.
+ * Returns the inner `data` payload from the backend response:
+ * { overview, topVendors, topProducts, monthlyStats, recentVendors, period }
+ */
 export const getAdminDashboardStats = async (
   period?: string,
   startDate?: string,
@@ -25,14 +23,20 @@ export const getAdminDashboardStats = async (
     params.period = "30d"; // default fallback
   }
 
-  const response = await api.get(`${API_BASE_URL}/admin`, {
+  // api interceptor returns response.data, so `body` is { success, data }
+  const body = await api.get(`${API_BASE_URL}/admin`, {
     params,
-    headers: getAuthHeaders(),
     withCredentials: true,
   });
-  return response.data;
+  // Return the inner data payload for direct consumption by pages
+  return (body as any).data;
 };
 
+/**
+ * Fetches vendor dashboard statistics.
+ * Returns the inner `data` payload from the backend response:
+ * { overview, growthRates, recentOrders, topProducts, leastSellingProducts, lowStockProducts, monthlyStats, period }
+ */
 export const getVendorDashboardStats = async (
   period?: string,
   startDate?: string,
@@ -49,10 +53,11 @@ export const getVendorDashboardStats = async (
     params.period = "30d"; // default fallback
   }
 
-  const response = await api.get(`${API_BASE_URL}/vendor`, {
+  // api interceptor returns response.data, so `body` is { success, data }
+  const body = await api.get(`${API_BASE_URL}/vendor`, {
     params,
-    headers: getAuthHeaders(),
     withCredentials: true,
   });
-  return response.data;
+  // Return the inner data payload for direct consumption by pages
+  return (body as any).data;
 };

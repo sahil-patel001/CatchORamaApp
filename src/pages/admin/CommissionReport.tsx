@@ -66,10 +66,12 @@ export default function CommissionReport() {
   const queryParams = getEffectiveDateRange();
 
   // Fetch vendors for dropdown
-  const { data: vendors = [] } = useQuery({
+  const { data: vendorsData } = useQuery({
     queryKey: ["vendors", "all"],
     queryFn: () => fetchVendors("", 1, 100, "all"),
   });
+
+  const vendors = vendorsData?.vendors || [];
 
   // Fetch commission report
   const {

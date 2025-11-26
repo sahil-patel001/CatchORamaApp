@@ -52,13 +52,14 @@ class NotificationService {
         params.append("category", query.category);
       }
 
-      const response = await api.get(`${API_BASE_URL}`, {
+      // api interceptor returns response.data => { success, data: { notifications, pagination } }
+      const body = await api.get(`${API_BASE_URL}`, {
         params: Object.fromEntries(params),
         withCredentials: true,
       });
 
       // Transform backend response to match frontend interface
-      const backendData = response.data;
+      const backendData = (body as any).data;
       return {
         notifications: backendData.notifications,
         total: backendData.pagination.total,
@@ -77,13 +78,13 @@ class NotificationService {
    */
   async getRecentNotifications(): Promise<Notification[]> {
     try {
-      // Use the unread endpoint for dropdown which gives us recent notifications
-      const response = await api.get(`${API_BASE_URL}/unread`, {
+      // api interceptor returns response.data => { success, data: { notifications, unreadCount } }
+      const body = await api.get(`${API_BASE_URL}/unread`, {
         params: { limit: 5 },
         withCredentials: true,
       });
 
-      return response.data?.notifications || [];
+      return (body as any).data?.notifications || [];
     } catch (error) {
       console.error("Error fetching recent notifications:", error);
       throw error;
@@ -95,11 +96,12 @@ class NotificationService {
    */
   async getUnreadCount(): Promise<number> {
     try {
-      const response = await api.get(`${API_BASE_URL}/unread`, {
+      // api interceptor returns response.data => { success, data: { unreadCount, notifications } }
+      const body = await api.get(`${API_BASE_URL}/unread`, {
         withCredentials: true,
       });
 
-      return response.data?.unreadCount || 0;
+      return (body as any).data?.unreadCount || 0;
     } catch (error) {
       console.error("Error fetching unread count:", error);
       return 0;

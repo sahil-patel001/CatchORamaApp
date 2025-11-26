@@ -106,7 +106,8 @@ export function VendorDashboard() {
     retry: false, // Don't retry on failure, use dummy data instead
   });
 
-  const stats = statsData?.data;
+  // statsData is already the inner data payload from the service (no extra .data nesting)
+  const stats = statsData;
 
   const navigateTo = (path: string) => {
     navigate(path);
@@ -186,44 +187,35 @@ export function VendorDashboard() {
 
   const statCards = [
     {
-      // title: getRevenueTitle(),
       title: "Total Revenue",
-      value: `$${stats?.overview.totalRevenue?.toLocaleString() ?? "0"}`,
+      value: `$${stats?.overview?.totalRevenue?.toLocaleString() ?? "0"}`,
       change: `$${
-        stats?.overview.recentRevenue?.toLocaleString() ?? 0
+        stats?.overview?.recentRevenue?.toLocaleString() ?? 0
       } revenue`,
       changeType:
-        (stats?.overview.recentRevenue ?? 0) >= 0 ? "positive" : "negative",
+        (stats?.overview?.recentRevenue ?? 0) >= 0 ? "positive" : "negative",
       icon: DollarSign,
       path: "/vendor/sales",
     },
-    // {
-    //   title: "Pending Orders",
-    //   value: stats?.overview.pendingOrders ?? 0,
-    //   changeType:
-    //     (stats?.overview.recentOrders ?? 0) >= 0 ? "positive" : "negative",
-    //   icon: ShoppingCart,
-    //   path: "/vendor/orders",
-    // },
     {
       title: "Total Orders",
-      value: stats?.overview.totalOrders ?? 0,
-      change: `${stats?.overview.recentOrders ?? 0} ${
-        stats?.overview.recentOrders > 1 ? "orders" : "order"
+      value: stats?.overview?.totalOrders ?? 0,
+      change: `${stats?.overview?.recentOrders ?? 0} ${
+        (stats?.overview?.recentOrders ?? 0) > 1 ? "orders" : "order"
       }`,
       changeType:
-        (stats?.overview.recentRevenue ?? 0) >= 0 ? "positive" : "negative",
+        (stats?.overview?.recentRevenue ?? 0) >= 0 ? "positive" : "negative",
       icon: ShoppingCart,
       path: "/vendor/orders",
     },
     {
       title: "Total Products",
-      value: stats?.overview.totalProducts ?? 0,
-      change: `${stats?.overview.recentProducts ?? 0} ${
-        stats?.overview.recentProducts > 1 ? "products" : "product"
+      value: stats?.overview?.totalProducts ?? 0,
+      change: `${stats?.overview?.recentProducts ?? 0} ${
+        (stats?.overview?.recentProducts ?? 0) > 1 ? "products" : "product"
       } added`,
       changeType:
-        (stats?.overview.recentRevenue ?? 0) >= 0 ? "positive" : "negative",
+        (stats?.overview?.recentRevenue ?? 0) >= 0 ? "positive" : "negative",
       icon: Package,
       path: "/vendor/products",
     },

@@ -9,11 +9,14 @@ import { Eye, Download } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 import { Order } from "@/types";
 import * as orderService from "@/services/orderService";
-import { Skeleton } from "@/components/ui/skeleton";
 
-interface ApiResponse {
-  data: {
-    orders: Order[];
+interface OrdersResponse {
+  orders: Order[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
   };
 }
 
@@ -39,17 +42,22 @@ export function OrderManagement() {
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [statusFilter, setStatusFilter] = useState<OrderStatus>("all");
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const {
     data: ordersData,
     isLoading,
+    isFetching,
     isError,
     error,
-  } = useQuery<ApiResponse>({
-    queryKey: ["orders"],
-    queryFn: orderService.getOrders,
+  } = useQuery<OrdersResponse>({
+    queryKey: ["orders", page, limit, statusFilter],
+    queryFn: () => orderService.getOrders(page, limit, undefined, statusFilter),
   });
-  const orders = ordersData?.data?.orders || [];
+  // Service now returns { orders, pagination } directly
+  const orders = ordersData?.orders || [];
+  const pagination = ordersData?.pagination;
 
   const getStatusBadge = (status: string) => {
     const variants = {
@@ -105,13 +113,8 @@ export function OrderManagement() {
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value as OrderStatus);
+    setPage(1); // Reset to first page when filter changes
   };
-
-  // Filter orders based on status
-  const filteredOrders = orders.filter((order) => {
-    if (statusFilter === "all") return true;
-    return order.status === statusFilter;
-  });
 
   // Create filter component
   const filterComponent = (
@@ -145,22 +148,6 @@ export function OrderManagement() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Order Management
-          </h1>
-          <p className="text-muted-foreground">
-            View and manage your customer orders.
-          </p>
-        </div>
-        <Skeleton className="h-96 w-full" data-testid="skeleton" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -171,12 +158,23 @@ export function OrderManagement() {
       </div>
 
       <DataTable
-        data={filteredOrders.map((o) => ({ ...o, id: o._id }))}
+        data={orders.map((o) => ({ ...o, id: o._id }))}
         columns={columns as any}
         searchKey="orderNumber"
         searchPlaceholder="Search by order #"
         onView={(item) => handleView(item as unknown as Order)}
         filterComponent={filterComponent}
+        manualPagination={true}
+        pageCount={pagination?.pages}
+        currentPage={(pagination?.page || 1) - 1}
+        pageSize={limit}
+        totalItems={pagination?.total}
+        onPageChange={(newPage) => setPage(newPage + 1)}
+        onPageSizeChange={(newLimit) => {
+          setLimit(newLimit);
+          setPage(1);
+        }}
+        isLoading={isLoading || isFetching}
       />
 
       {selectedOrder && (

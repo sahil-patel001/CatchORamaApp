@@ -45,35 +45,37 @@ export function EditCategoryModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
+      <DialogContent className="max-w-2xl w-full max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Edit Category</DialogTitle>
           <DialogDescription>Update the category details.</DialogDescription>
         </DialogHeader>
-        <form
-          id="edit-category-form"
-          onSubmit={handleSubmit}
-          className="space-y-4"
-        >
-          <div>
-            <Label htmlFor="name">Category Name</Label>
-            <Input
-              id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
-            />
-          </div>
-          <div>
-            <Label htmlFor="description">Description (Optional)</Label>
-            <Textarea
-              id="description"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-            />
-          </div>
-        </form>
-        <DialogFooter>
+        <div className="flex-grow overflow-y-auto thin-scrollbar -mr-1 pr-4 modal-form-container">
+          <form
+            id="edit-category-form"
+            onSubmit={handleSubmit}
+            className="space-y-4 p-1"
+          >
+            <div>
+              <Label htmlFor="name">Category Name</Label>
+              <Input
+                id="name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+              />
+            </div>
+            <div>
+              <Label htmlFor="description">Description (Optional)</Label>
+              <Textarea
+                id="description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+              />
+            </div>
+          </form>
+        </div>
+        <DialogFooter className="pt-6 mt-auto border-t">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>

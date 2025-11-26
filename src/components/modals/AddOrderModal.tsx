@@ -58,7 +58,7 @@ export function AddOrderModal({ open, onOpenChange, onAdd }: AddOrderModalProps)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent className="max-w-2xl w-full max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Add New Order</DialogTitle>
           <DialogDescription>

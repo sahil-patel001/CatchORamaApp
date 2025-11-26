@@ -184,40 +184,30 @@ export const logout = asyncHandler(async (req, res, next) => {
 // @route   GET /api/v1/auth/me
 // @access  Private
 export const getMe = asyncHandler(async (req, res, next) => {
-  try {
-    let userData = {
-      id: req.user._id,
-      name: req.user.name,
-      email: req.user.email,
-      role: req.user.role,
-      createdAt: req.user.createdAt,
-      lastLogin: req.user.lastLogin,
-    };
+  let userData = {
+    id: req.user._id,
+    name: req.user.name,
+    email: req.user.email,
+    role: req.user.role,
+    createdAt: req.user.createdAt,
+    lastLogin: req.user.lastLogin,
+  };
 
-    // Get vendor info if user is a vendor
-    if (req.user.role === "vendor") {
-      const vendor = await Vendor.findOne({ userId: req.user._id });
-      if (vendor) {
-        userData.vendorId = vendor._id;
-        userData.businessName = vendor.businessName;
-      }
-      throw "invalid user!";
+  // Get vendor info if user is a vendor
+  if (req.user.role === "vendor") {
+    const vendor = await Vendor.findOne({ userId: req.user._id });
+    if (vendor) {
+      userData.vendorId = vendor._id;
+      userData.businessName = vendor.businessName;
     }
-    // else if (req.user.role = "superadmin") {}
-    res.status(200).json({
-      success: true,
-      data: {
-        user: userData,
-      },
-    });
-  } catch(err) {
-    return res.status(401).json({
-      success: false,
-      error: {
-        message: err || "No active session!",
-      },
-    });
   }
+
+  res.status(200).json({
+    success: true,
+    data: {
+      user: userData,
+    },
+  });
 });
 
 // @desc    Refresh token
@@ -259,9 +249,38 @@ export const refreshToken = asyncHandler(async (req, res, next) => {
     // Update refresh token in database using updateOne to avoid validation issues
     await User.updateOne({ _id: user._id }, { refreshToken: newRefreshToken });
 
+    // Prepare user data for response (mirroring login response shape)
+    const userData = {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      createdAt: user.createdAt,
+      lastLogin: user.lastLogin,
+      token: newToken,
+    };
+
+    // Get vendor info if user is a vendor
+    if (user.role === "vendor") {
+      const vendor = await Vendor.findOne({ userId: user._id });
+      if (vendor) {
+        userData.vendorId = vendor._id;
+        userData.businessName = vendor.businessName;
+      }
+    }
+
+    // Set fresh HTTP-only token cookie (same options as login/register)
+    res.cookie("token", newToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
     res.status(200).json({
       success: true,
       data: {
+        user: userData,
         token: newToken,
         refreshToken: newRefreshToken,
       },

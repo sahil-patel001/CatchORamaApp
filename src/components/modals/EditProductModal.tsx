@@ -105,20 +105,24 @@ export const EditProductModal = React.memo(
 
     // Fetch categories - for superadmin, filter by product's vendor
     const {
-      data: categories,
+      data: categoriesData,
       isLoading: categoriesLoading,
       error: categoriesError,
-    } = useQuery<Category[]>({
+    } = useQuery({
       queryKey: ["categories", product?.vendorId],
       queryFn: () =>
         getCategories(
-          user?.role === "superadmin" ? product?.vendorId : undefined
+          user?.role === "superadmin" ? product?.vendorId : undefined,
+          1,
+          1000 // Get all categories for dropdown
         ),
       enabled:
         !!product &&
         (user?.role === "vendor" ||
           (user?.role === "superadmin" && !!product?.vendorId)),
     });
+
+    const categories = categoriesData?.categories || [];
 
     useEffect(() => {
       if (product && open) {
@@ -242,7 +246,7 @@ export const EditProductModal = React.memo(
 
     return (
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col">
+        <DialogContent className="max-w-2xl w-full max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>Edit Product</DialogTitle>
             <DialogDescription>
