@@ -1,4 +1,3 @@
-import axios from "axios";
 import { SalesReport, ReportPeriod, CommissionReport } from "@/types";
 import api from "./api";
 
@@ -6,6 +5,7 @@ const API_URL = `/reports`;
 
 /**
  * Fetches the sales report for the logged-in vendor.
+ * Returns the inner `data` object from the backend response.
  * @param period - The time period for the report ('weekly', 'monthly', 'yearly').
  * @param startDate - Custom start date (optional)
  * @param endDate - Custom end date (optional)
@@ -26,15 +26,17 @@ export const getSalesReport = async (
     params.period = period;
   }
 
-  const response = await api.get(`${API_URL}/sales`, {
+  // api interceptor returns response.data => { success, data: SalesReport }
+  const body = await api.get(`${API_URL}/sales`, {
     withCredentials: true,
     params,
   });
-  return response.data;
+  return (body as any).data;
 };
 
 /**
  * Fetches the sales report for a specific vendor (admin access).
+ * Returns the inner `data` object from the backend response.
  * @param vendorId - The vendor's ID
  * @param period - The time period for the report ('weekly', 'monthly', 'yearly').
  * @param startDate - Custom start date (optional)
@@ -57,15 +59,17 @@ export const getVendorSalesReportAsAdmin = async (
     params.period = period;
   }
 
-  const response = await api.get(`${API_URL}/sales`, {
+  // api interceptor returns response.data => { success, data: SalesReport }
+  const body = await api.get(`${API_URL}/sales`, {
     withCredentials: true,
     params,
   });
-  return response.data;
+  return (body as any).data;
 };
 
 /**
  * Fetches the commission report for all vendors (Super Admin only).
+ * Returns the inner `data` object from the backend response.
  * @param period - The time period for the report ('weekly', 'monthly', 'quarterly', 'yearly').
  * @param startDate - Custom start date (optional)
  * @param endDate - Custom end date (optional)
@@ -86,9 +90,10 @@ export const getCommissionReport = async (
   if (paymentStatus && paymentStatus !== "all")
     params.paymentStatus = paymentStatus;
 
-  const response = await api.get(`${API_URL}/commission`, {
+  // api interceptor returns response.data => { success, data: CommissionReport }
+  const body = await api.get(`${API_URL}/commission`, {
     withCredentials: true,
     params,
   });
-  return response.data;
+  return (body as any).data;
 };

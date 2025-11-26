@@ -81,19 +81,23 @@ export function AddProductModal({
 
   // Fetch categories - for superadmin, only fetch when vendor is selected
   const {
-    data: categories,
+    data: categoriesData,
     isLoading: categoriesLoading,
     error: categoriesError,
-  } = useQuery<Category[]>({
+  } = useQuery({
     queryKey: ["categories", formData.vendorId],
     queryFn: () =>
       getCategories(
-        user?.role === "superadmin" ? formData.vendorId : undefined
+        user?.role === "superadmin" ? formData.vendorId : undefined,
+        1,
+        1000 // Get all categories for dropdown
       ),
     enabled:
       user?.role === "vendor" ||
       (user?.role === "superadmin" && !!formData.vendorId),
   });
+
+  const categories = categoriesData?.categories || [];
 
   // Fetch vendors (only for super admin)
   const {
@@ -206,7 +210,7 @@ export function AddProductModal({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px] max-h-[90vh] flex flex-col">
+      <DialogContent className="max-w-2xl w-full max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Add New Product</DialogTitle>
           <DialogDescription>

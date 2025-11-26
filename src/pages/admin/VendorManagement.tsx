@@ -27,13 +27,20 @@ type Column = {
   render: (_: unknown, row: Vendor) => React.ReactNode;
 };
 
+interface VendorsResponse {
+  vendors: Vendor[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
+
 export function VendorManagement() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const [vendors, setVendors] = useState<Vendor[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -41,40 +48,23 @@ export function VendorManagement() {
   const [vendorPrefixModalOpen, setVendorPrefixModalOpen] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [statusFilter, setStatusFilter] = useState<VendorStatus>("all");
-
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        const data = await fetchVendors();
-        setVendors(data);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : "Failed to load vendors";
-        setError(errorMessage);
-        toast({
-          title: "Error",
-          description: errorMessage,
-          variant: "destructive",
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [toast]);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   // Fetch vendors using React Query with status filter
   const {
-    data: vendorsData = [],
+    data: vendorsData,
     isLoading,
+    isFetching,
     isError,
     error: queryError,
-  } = useQuery({
-    queryKey: ["vendors", statusFilter],
-    queryFn: () => fetchVendors("", 1, 10, statusFilter),
+  } = useQuery<VendorsResponse>({
+    queryKey: ["vendors", page, limit, statusFilter],
+    queryFn: () => fetchVendors("", page, limit, statusFilter),
   });
+
+  const vendors = vendorsData?.vendors || [];
+  const pagination = vendorsData?.pagination;
 
   // Create vendor mutation
   const createVendorMutation = useMutation({
@@ -237,7 +227,7 @@ export function VendorManagement() {
   };
 
   const handleAddVendor = (vendor: Vendor) => {
-    setVendors((prev) => [...prev, vendor]);
+    // Vendor will be added via mutation, no need to update local state
   };
 
   const handleView = (vendor: Vendor) => {
@@ -274,19 +264,14 @@ export function VendorManagement() {
   };
 
   const confirmDelete = () => {
-    if (selectedVendor) {
-      setVendors(vendors.filter((v) => v._id !== selectedVendor._id));
-      toast({
-        title: "Vendor Deleted",
-        description: `${selectedVendor.businessName} has been deleted`,
-      });
+    if (selectedVendor?._id) {
+      deleteVendorMutation.mutate(selectedVendor._id);
     }
-    setDeleteDialogOpen(false);
-    setSelectedVendor(null);
   };
 
   const handleStatusChange = (value: string) => {
     setStatusFilter(value as VendorStatus);
+    setPage(1); // Reset to first page when filter changes
   };
 
   const handleManageVendorPrefix = (vendor: Vendor) => {
@@ -298,11 +283,6 @@ export function VendorManagement() {
     // Refresh vendor data to show updated prefix
     queryClient.invalidateQueries({ queryKey: ["vendors"] });
   };
-
-  const filteredVendors = vendors.filter((vendor) => {
-    if (statusFilter === "all") return true;
-    return vendor.status === statusFilter;
-  });
 
   // Create filter component
   const filterComponent = (
@@ -333,27 +313,30 @@ export function VendorManagement() {
         </p>
       </div>
 
-      {loading ? (
-        <div className="py-10 text-center text-muted-foreground">
-          Loading vendors...
-        </div>
-      ) : error ? (
-        <div className="py-10 text-center text-red-500">{error}</div>
-      ) : (
-        <DataTable
-          data={filteredVendors}
-          columns={columns}
-          searchKey="businessName"
-          searchPlaceholder="Search vendors..."
-          addButtonText="Add Vendor"
-          onAdd={handleAdd}
-          onView={handleView}
-          onEdit={handleEdit}
-          onDelete={handleDelete}
-          extraActions={extraActions}
-          filterComponent={filterComponent}
-        />
-      )}
+      <DataTable
+        data={vendors}
+        columns={columns}
+        searchKey="businessName"
+        searchPlaceholder="Search vendors..."
+        addButtonText="Add Vendor"
+        onAdd={handleAdd}
+        onView={handleView}
+        onEdit={handleEdit}
+        onDelete={handleDelete}
+        extraActions={extraActions}
+        filterComponent={filterComponent}
+        manualPagination={true}
+        pageCount={pagination?.pages}
+        currentPage={(pagination?.page || 1) - 1}
+        pageSize={limit}
+        totalItems={pagination?.total}
+        onPageChange={(newPage) => setPage(newPage + 1)}
+        onPageSizeChange={(newLimit) => {
+          setLimit(newLimit);
+          setPage(1);
+        }}
+        isLoading={isLoading || isFetching}
+      />
 
       <AddVendorModal
         open={addModalOpen}

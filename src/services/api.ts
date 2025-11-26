@@ -1,6 +1,4 @@
 import axios from 'axios';
-import { logout } from './authService';
-import { useAuth } from '@/contexts/AuthContext';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL + "/api/v1",
@@ -21,21 +19,13 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response interceptor for error handling
+// Response interceptor
+// Note: 401 handling is done in AuthContext via checkAuth/refresh flow
+// This interceptor unwraps axios response to return response.data directly
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
-    if (error.response?.status === 401) {
-      try {
-        const { logout } = useAuth();
-        logout();
-      }
-      finally {
-        // Handle unauthorized - redirect to login
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
-    }
+    // Return the response data if available, otherwise the full error
     return Promise.reject(error.response?.data || error);
   }
 );

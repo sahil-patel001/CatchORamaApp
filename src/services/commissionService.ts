@@ -1,4 +1,3 @@
-import axios from "axios";
 import { Commission, CommissionStats, CommissionHistoryEntry } from "@/types";
 import api from "./api";
 
@@ -34,14 +33,15 @@ export interface PaginatedResponse<T> {
 export const getCommissions = async (
   filters: CommissionFilters = {}
 ): Promise<PaginatedResponse<Commission>> => {
-  const response = await api.get(API_URL, {
+  // api interceptor returns response.data => { success, data: { commissions, pagination } }
+  const body = await api.get(API_URL, {
     withCredentials: true,
     params: filters,
   });
 
-  // Backend returns { data: { commissions: [...], pagination: {...} } }
+  // Backend returns { success, data: { commissions: [...], pagination: {...} } }
   // We need to map it to { data: [...], pagination: {...} }
-  const backendData = response.data;
+  const backendData = (body as any).data;
   return {
     data: backendData.commissions || [],
     pagination: backendData.pagination,
@@ -52,10 +52,11 @@ export const getCommissions = async (
  * Fetches a single commission by ID
  */
 export const getCommission = async (id: string): Promise<Commission> => {
-  const response = await api.get(`${API_URL}/${id}`, {
+  // api interceptor returns response.data => { success, data: Commission }
+  const body = await api.get(`${API_URL}/${id}`, {
     withCredentials: true,
   });
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -68,10 +69,11 @@ export const generateCommission = async (data: {
   periodType?: "weekly" | "monthly" | "quarterly" | "yearly" | "custom";
   commissionRate?: number; // Optional commission rate override (0-1)
 }): Promise<Commission> => {
-  const response = await api.post(`${API_URL}/generate`, data, {
+  // api interceptor returns response.data => { success, data: Commission }
+  const body = await api.post(`${API_URL}/generate`, data, {
     withCredentials: true,
   });
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -98,24 +100,26 @@ export const bulkGenerateCommissions = async (data: {
     }>;
   };
 }> => {
-  const response = await api.post(`${API_URL}/bulk-generate`, data, {
+  // api interceptor returns response.data => { success, data: { message, results } }
+  const body = await api.post(`${API_URL}/bulk-generate`, data, {
     withCredentials: true,
   });
-  return response.data;
+  return (body as any).data;
 };
 
 /**
  * Approves a commission
  */
 export const approveCommission = async (id: string): Promise<Commission> => {
-  const response = await api.put(
+  // api interceptor returns response.data => { success, data: Commission }
+  const body = await api.put(
     `${API_URL}/${id}/approve`,
     {},
     {
       withCredentials: true,
     }
   );
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -129,10 +133,11 @@ export const markCommissionAsPaid = async (
     notes?: string;
   }
 ): Promise<Commission> => {
-  const response = await api.put(`${API_URL}/${id}/pay`, paymentData, {
+  // api interceptor returns response.data => { success, data: Commission }
+  const body = await api.put(`${API_URL}/${id}/pay`, paymentData, {
     withCredentials: true,
   });
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -142,14 +147,15 @@ export const disputeCommission = async (
   id: string,
   notes: string
 ): Promise<Commission> => {
-  const response = await api.put(
+  // api interceptor returns response.data => { success, data: Commission }
+  const body = await api.put(
     `${API_URL}/${id}/dispute`,
     { notes },
     {
       withCredentials: true,
     }
   );
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -165,10 +171,11 @@ export const updateCommission = async (
     };
   }
 ): Promise<Commission> => {
-  const response = await api.put(`${API_URL}/${id}`, updates, {
+  // api interceptor returns response.data => { success, data: Commission }
+  const body = await api.put(`${API_URL}/${id}`, updates, {
     withCredentials: true,
   });
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -177,10 +184,11 @@ export const updateCommission = async (
 export const deleteCommission = async (
   id: string
 ): Promise<{ message: string }> => {
-  const response = await api.delete(`${API_URL}/${id}`, {
+  // api interceptor returns response.data => { success, message }
+  const body = await api.delete(`${API_URL}/${id}`, {
     withCredentials: true,
   });
-  return response.data;
+  return body as any;
 };
 
 /**
@@ -191,11 +199,12 @@ export const getCommissionStats = async (filters?: {
   startDate?: string;
   endDate?: string;
 }): Promise<CommissionStats> => {
-  const response = await api.get(`${API_URL}/stats`, {
+  // api interceptor returns response.data => { success, data: CommissionStats }
+  const body = await api.get(`${API_URL}/stats`, {
     withCredentials: true,
     params: filters,
   });
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -208,11 +217,12 @@ export const getVendorCommissions = async (
     endDate?: string;
   } = {}
 ): Promise<PaginatedResponse<Commission>> => {
-  const response = await api.get(`${API_URL}/vendor`, {
+  // api interceptor returns response.data => { success, data: { commissions, pagination } }
+  const body = await api.get(`${API_URL}/vendor`, {
     withCredentials: true,
     params: filters,
   });
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -228,13 +238,12 @@ export const getCommissionHistory = async (
     limit?: number;
   }
 ): Promise<CommissionHistoryEntry[]> => {
-  // Note: This would need to be implemented in the backend as a separate endpoint
-  // For now, this is a placeholder implementation
-  const response = await api.get(`${API_URL}/${commissionId}/history`, {
+  // api interceptor returns response.data => { success, data: CommissionHistoryEntry[] }
+  const body = await api.get(`${API_URL}/${commissionId}/history`, {
     withCredentials: true,
     params: options,
   });
-  return response.data;
+  return (body as any).data;
 };
 
 /**
@@ -244,12 +253,13 @@ export const exportCommissions = async (
   filters: CommissionFilters = {},
   format: "csv" | "json" = "csv"
 ): Promise<Blob> => {
-  const response = await api.get(`${API_URL}/export`, {
+  // For blob responses, the interceptor returns the blob directly
+  const body = await api.get(`${API_URL}/export`, {
     withCredentials: true,
     params: { ...filters, format },
     responseType: "blob",
   });
-  return response.data;
+  return body as any;
 };
 
 /**

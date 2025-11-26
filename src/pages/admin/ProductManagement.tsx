@@ -43,11 +43,23 @@ type ProductStatus = "all" | "active" | "inactive" | "draft" | "out_of_stock";
 export function ProductManagement() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { data, isLoading, isError, error } = useQuery({
-    queryKey: ["products"],
-    queryFn: () => productService.getProducts(),
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  
+  const { data, isLoading, isError, error, isSuccess, isFetching } = useQuery({
+    queryKey: ["products", page, limit],
+    queryFn: () => productService.getProducts({ page, limit }),
   });
-  const products: Product[] = data?.products || [];
+
+  // Defensive fallback: if query succeeded but data is undefined, log warning and use empty array
+  if (isSuccess && data === undefined) {
+    console.warn(
+      "[ProductManagement] Query succeeded but data is undefined. Using empty fallback."
+    );
+  }
+
+  const products: Product[] = data?.products ?? [];
+  const pagination = data?.pagination;
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
@@ -563,17 +575,20 @@ export function ProductManagement() {
     </div>
   );
 
-  if (isLoading) {
-    return (
-      <div className="py-10 text-center text-muted-foreground">
-        Loading products...
-      </div>
-    );
-  }
   if (isError) {
     return (
-      <div className="py-10 text-center text-red-500">
-        {error instanceof Error ? error.message : "Failed to load products"}
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Product Management
+          </h1>
+          <p className="text-muted-foreground">
+            Manage all products across all vendors
+          </p>
+        </div>
+        <div className="py-10 text-center text-red-500">
+          {error instanceof Error ? error.message : "Failed to load products"}
+        </div>
       </div>
     );
   }
@@ -675,6 +690,17 @@ export function ProductManagement() {
         enableSelection={isAdmin && !barcodeState.isLoading}
         selectedItems={selectedProducts}
         onSelectionChange={handleSelectionChange}
+        manualPagination={true}
+        pageCount={pagination?.pages}
+        currentPage={(pagination?.page || 1) - 1}
+        pageSize={limit}
+        totalItems={pagination?.total}
+        onPageChange={(newPage) => setPage(newPage + 1)}
+        onPageSizeChange={(newLimit) => {
+          setLimit(newLimit);
+          setPage(1);
+        }}
+        isLoading={isLoading || isFetching}
       />
       <AddProductModal
         open={addModalOpen}

@@ -74,7 +74,7 @@ export default function CommissionManagement() {
   const [status, setStatus] = useState<string>("all");
   const [vendorId, setVendorId] = useState<string>("all");
   const [page, setPage] = useState(1);
-  const [limit] = useState(20);
+  const [limit, setLimit] = useState(20);
 
   // Date range picker state - using preset periods with weekly as default per user preference
   const dateRangePicker = useDateRangePicker("7d");
@@ -160,6 +160,7 @@ export default function CommissionManagement() {
   const {
     data: commissionsData,
     isLoading: commissionsLoading,
+    isFetching: commissionsFetching,
     error: commissionsError,
   } = useQuery({
     queryKey: [
@@ -554,7 +555,7 @@ export default function CommissionManagement() {
 
   const commissions = commissionsData?.data || [];
   const pagination = commissionsData?.pagination;
-  const vendors = vendorsData || [];
+  const vendors = vendorsData?.vendors || [];
 
   // Debug: Log commission data and any errors
   console.log("Current user:", user);
@@ -915,57 +916,24 @@ export default function CommissionManagement() {
           <CardTitle>Commissions</CardTitle>
         </CardHeader>
         <CardContent>
-          {commissionsLoading ? (
-            <div className="space-y-4">
-              {[...Array(5)].map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
-          ) : commissions.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">
-              No commissions found matching your criteria.
-            </div>
-          ) : (
-            <DataTable
-              data={commissions.map((c) => ({ ...c, id: c._id }))}
-              columns={commissionColumns}
-              searchKey="vendor.businessName"
-              searchPlaceholder="Search by vendor..."
-              hideAddButton={true}
-            />
-          )}
-
-          {/* Pagination */}
-          {pagination && pagination.pages > 1 && (
-            <div className="flex justify-between items-center mt-4">
-              <div className="text-sm text-gray-500">
-                Showing {(pagination.current - 1) * pagination.limit + 1} to{" "}
-                {Math.min(
-                  pagination.current * pagination.limit,
-                  pagination.total
-                )}{" "}
-                of {pagination.total} commissions
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={pagination.current <= 1}
-                  onClick={() => setPage(page - 1)}
-                >
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={pagination.current >= pagination.pages}
-                  onClick={() => setPage(page + 1)}
-                >
-                  Next
-                </Button>
-              </div>
-            </div>
-          )}
+          <DataTable
+            data={commissions.map((c) => ({ ...c, id: c._id }))}
+            columns={commissionColumns}
+            searchKey="vendor.businessName"
+            searchPlaceholder="Search by vendor..."
+            hideAddButton={true}
+            manualPagination={true}
+            pageCount={pagination?.pages}
+            currentPage={(pagination?.current || 1) - 1}
+            pageSize={limit}
+            totalItems={pagination?.total}
+            onPageChange={(newPage) => setPage(newPage + 1)}
+            onPageSizeChange={(newLimit) => {
+              setLimit(newLimit);
+              setPage(1);
+            }}
+            isLoading={commissionsLoading || commissionsFetching}
+          />
         </CardContent>
       </Card>
 

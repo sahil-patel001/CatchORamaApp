@@ -7,10 +7,19 @@ import { EditCategoryModal } from "@/components/modals/EditCategoryModal";
 import { useToast } from "@/hooks/use-toast";
 import * as categoryService from "@/services/categoryService";
 import { Category } from "@/types";
-import { Skeleton } from "@/components/ui/skeleton";
 import { formatDate } from "@/lib/utils";
 
 type CategoryRow = Category & { id: string };
+
+interface CategoriesResponse {
+  categories: Category[];
+  pagination?: {
+    page: number;
+    limit: number;
+    total: number;
+    pages: number;
+  };
+}
 
 export function CategoryManagement() {
   const queryClient = useQueryClient();
@@ -22,16 +31,22 @@ export function CategoryManagement() {
   const [selectedCategory, setSelectedCategory] = useState<Category | null>(
     null
   );
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
 
   const {
-    data: categories,
+    data: categoriesData,
     isLoading,
+    isFetching,
     isError,
     error,
-  } = useQuery({
-    queryKey: ["categories"],
-    queryFn: categoryService.getCategories,
+  } = useQuery<CategoriesResponse>({
+    queryKey: ["categories", page, limit],
+    queryFn: () => categoryService.getCategories(undefined, page, limit),
   });
+
+  const categories = categoriesData?.categories || [];
+  const pagination = categoriesData?.pagination;
 
   const createMutation = useMutation({
     mutationFn: categoryService.createCategory,
@@ -186,22 +201,6 @@ export function CategoryManagement() {
     );
   }
 
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Category Management
-          </h1>
-          <p className="text-muted-foreground">
-            Organize your products into categories
-          </p>
-        </div>
-        <Skeleton className="h-96 w-full" data-testid="skeleton" />
-      </div>
-    );
-  }
-
   return (
     <div className="space-y-6">
       <div>
@@ -226,6 +225,17 @@ export function CategoryManagement() {
         onEdit={(item) => handleEdit(item as unknown as Category)}
         onDelete={(item) => handleDelete(item as unknown as Category)}
         addButtonText="Add Category"
+        manualPagination={true}
+        pageCount={pagination?.pages}
+        currentPage={(pagination?.page || 1) - 1}
+        pageSize={limit}
+        totalItems={pagination?.total}
+        onPageChange={(newPage) => setPage(newPage + 1)}
+        onPageSizeChange={(newLimit) => {
+          setLimit(newLimit);
+          setPage(1);
+        }}
+        isLoading={isLoading || isFetching}
       />
 
       <AddCategoryModal

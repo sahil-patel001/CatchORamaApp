@@ -15,6 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Select,
   SelectContent,
@@ -41,6 +42,7 @@ import {
   ArrowUpDown,
   ArrowUp,
   ArrowDown,
+  Loader2,
 } from "lucide-react";
 
 // Legacy column interface for backward compatibility
@@ -95,6 +97,16 @@ interface DataTableProps<T> {
   enableSelection?: boolean;
   selectedItems?: T[];
   onSelectionChange?: (selectedItems: T[]) => void;
+  // Server-side pagination props
+  manualPagination?: boolean;
+  pageCount?: number;
+  currentPage?: number;
+  pageSize?: number;
+  totalItems?: number;
+  onPageChange?: (page: number) => void;
+  onPageSizeChange?: (pageSize: number) => void;
+  // Loading state for inline table loading
+  isLoading?: boolean;
 }
 
 export const DataTable = React.memo(
@@ -116,6 +128,14 @@ export const DataTable = React.memo(
     enableSelection = false,
     selectedItems = [],
     onSelectionChange,
+    manualPagination = false,
+    pageCount,
+    currentPage = 0,
+    pageSize: propPageSize = 10,
+    totalItems,
+    onPageChange,
+    onPageSizeChange,
+    isLoading = false,
   }: DataTableProps<T>) => {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -387,7 +407,7 @@ export const DataTable = React.memo(
       onColumnFiltersChange: setColumnFilters,
       onGlobalFilterChange: setGlobalFilter,
       getCoreRowModel: getCoreRowModel(),
-      getPaginationRowModel: getPaginationRowModel(),
+      getPaginationRowModel: manualPagination ? undefined : getPaginationRowModel(),
       getSortedRowModel: getSortedRowModel(),
       getFilteredRowModel: getFilteredRowModel(),
       onColumnVisibilityChange: setColumnVisibility,
@@ -400,12 +420,25 @@ export const DataTable = React.memo(
         columnVisibility,
         rowSelection,
         globalFilter,
+        ...(manualPagination && {
+          pagination: {
+            pageIndex: currentPage,
+            pageSize: propPageSize,
+          },
+        }),
       },
-      initialState: {
-        pagination: {
-          pageSize: 10,
-        },
-      },
+      ...(manualPagination
+        ? {
+            manualPagination: true,
+            pageCount: pageCount || Math.ceil((totalItems || 0) / propPageSize),
+          }
+        : {
+            initialState: {
+              pagination: {
+                pageSize: propPageSize,
+              },
+            },
+          }),
       // Enable multi-sort with shift key
       enableMultiSort: true,
       // Ensure stable sorting
@@ -488,7 +521,18 @@ export const DataTable = React.memo(
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {isLoading ? (
+                // Show skeleton rows while loading
+                Array.from({ length: propPageSize }).map((_, index) => (
+                  <TableRow key={`skeleton-${index}`} className="hover:bg-transparent">
+                    {tableColumns.map((_, colIndex) => (
+                      <TableCell key={`skeleton-cell-${colIndex}`} className="px-2 py-2">
+                        <Skeleton className="h-6 w-full" />
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))
+              ) : table.getRowModel().rows?.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}
@@ -526,10 +570,16 @@ export const DataTable = React.memo(
               Rows per page:
             </span>
             <Select
-              value={`${table.getState().pagination.pageSize}`}
+              value={`${manualPagination ? propPageSize : table.getState().pagination.pageSize}`}
               onValueChange={(value) => {
-                table.setPageSize(Number(value));
+                const newPageSize = Number(value);
+                if (manualPagination && onPageSizeChange) {
+                  onPageSizeChange(newPageSize);
+                } else {
+                  table.setPageSize(newPageSize);
+                }
               }}
+              disabled={isLoading}
             >
               <SelectTrigger className="w-20">
                 <SelectValue />
@@ -545,27 +595,70 @@ export const DataTable = React.memo(
 
           <div className="flex items-center space-x-2">
             <span className="text-sm text-muted-foreground">
-              Page {table.getState().pagination.pageIndex + 1} of{" "}
-              {table.getPageCount() || 1}
+              {manualPagination ? (
+                <>
+                  Page {currentPage + 1} of {pageCount || 1}
+                  {totalItems !== undefined && (
+                    <span className="ml-2">
+                      ({totalItems} total items)
+                    </span>
+                  )}
+                </>
+              ) : (
+                <>
+                  Page {table.getState().pagination.pageIndex + 1} of{" "}
+                  {table.getPageCount() || 1}
+                </>
+              )}
             </span>
             <div className="flex items-center space-x-1">
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => table.previousPage()}
-                disabled={!table.getCanPreviousPage()}
+                onClick={() => {
+                  if (manualPagination && onPageChange) {
+                    onPageChange(currentPage - 1);
+                  } else {
+                    table.previousPage();
+                  }
+                }}
+                disabled={
+                  isLoading ||
+                  (manualPagination
+                    ? currentPage === 0
+                    : !table.getCanPreviousPage())
+                }
                 className="h-8 w-8"
               >
-                <ChevronLeft className="h-4 w-4" />
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ChevronLeft className="h-4 w-4" />
+                )}
               </Button>
               <Button
                 variant="outline"
                 size="icon"
-                onClick={() => table.nextPage()}
-                disabled={!table.getCanNextPage()}
+                onClick={() => {
+                  if (manualPagination && onPageChange) {
+                    onPageChange(currentPage + 1);
+                  } else {
+                    table.nextPage();
+                  }
+                }}
+                disabled={
+                  isLoading ||
+                  (manualPagination
+                    ? currentPage >= (pageCount || 1) - 1
+                    : !table.getCanNextPage())
+                }
                 className="h-8 w-8"
               >
-                <ChevronRight className="h-4 w-4" />
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ChevronRight className="h-4 w-4" />
+                )}
               </Button>
             </div>
           </div>

@@ -1,101 +1,95 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import axios from "axios";
 import {
   getAdminDashboardStats,
   getVendorDashboardStats,
 } from "../dashboardService";
 
-// Mock axios
-vi.mock("axios");
-const mockedAxios = vi.mocked(axios);
+// Mock the api module
+vi.mock("../api", () => ({
+  default: {
+    get: vi.fn(),
+  },
+}));
 
-// Mock localStorage
-const mockLocalStorage = {
-  getItem: vi.fn(),
-  setItem: vi.fn(),
-  removeItem: vi.fn(),
-  clear: vi.fn(),
-};
-Object.defineProperty(window, "localStorage", {
-  value: mockLocalStorage,
-});
+// Import the mocked api
+import api from "../api";
+const mockedApi = vi.mocked(api);
 
 describe("Dashboard Service", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockLocalStorage.getItem.mockReturnValue("mock-token");
   });
 
   describe("getAdminDashboardStats", () => {
-    const mockResponse = {
+    // Simulates the response from the api interceptor (response.data from backend)
+    const mockApiResponse = {
+      success: true,
       data: {
-        success: true,
-        data: {
-          overview: {
-            totalVendors: 10,
-            totalProducts: 100,
-            totalOrders: 50,
-            totalRevenue: 10000,
-          },
+        overview: {
+          totalVendors: 10,
+          totalProducts: 100,
+          totalOrders: 50,
+          totalRevenue: 10000,
         },
+        topVendors: [],
+        topProducts: [],
+        monthlyStats: [],
+        period: "30d",
       },
     };
 
     it("calls API with period parameter", async () => {
-      mockedAxios.get.mockResolvedValueOnce(mockResponse);
+      mockedApi.get.mockResolvedValueOnce(mockApiResponse);
 
       await getAdminDashboardStats("7d");
 
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        expect.stringContaining("/dashboard/admin"),
+      expect(mockedApi.get).toHaveBeenCalledWith(
+        "/dashboard/admin",
         expect.objectContaining({
           params: { period: "7d" },
-          headers: { Authorization: "Bearer mock-token" },
           withCredentials: true,
         })
       );
     });
 
     it("calls API with custom date range", async () => {
-      mockedAxios.get.mockResolvedValueOnce(mockResponse);
+      mockedApi.get.mockResolvedValueOnce(mockApiResponse);
 
       await getAdminDashboardStats(undefined, "2024-01-01", "2024-01-31");
 
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        expect.stringContaining("/dashboard/admin"),
+      expect(mockedApi.get).toHaveBeenCalledWith(
+        "/dashboard/admin",
         expect.objectContaining({
           params: {
             startDate: "2024-01-01",
             endDate: "2024-01-31",
           },
-          headers: { Authorization: "Bearer mock-token" },
           withCredentials: true,
         })
       );
     });
 
     it("defaults to 30d period when no parameters provided", async () => {
-      mockedAxios.get.mockResolvedValueOnce(mockResponse);
+      mockedApi.get.mockResolvedValueOnce(mockApiResponse);
 
       await getAdminDashboardStats();
 
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        expect.stringContaining("/dashboard/admin"),
+      expect(mockedApi.get).toHaveBeenCalledWith(
+        "/dashboard/admin",
         expect.objectContaining({
           params: { period: "30d" },
-          headers: { Authorization: "Bearer mock-token" },
           withCredentials: true,
         })
       );
     });
 
     it("prioritizes custom date range over period", async () => {
-      mockedAxios.get.mockResolvedValueOnce(mockResponse);
+      mockedApi.get.mockResolvedValueOnce(mockApiResponse);
 
       await getAdminDashboardStats("7d", "2024-01-01", "2024-01-31");
 
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        expect.stringContaining("/dashboard/admin"),
+      expect(mockedApi.get).toHaveBeenCalledWith(
+        "/dashboard/admin",
         expect.objectContaining({
           params: {
             startDate: "2024-01-01",
@@ -105,96 +99,77 @@ describe("Dashboard Service", () => {
       );
     });
 
-    it("returns the response data", async () => {
-      mockedAxios.get.mockResolvedValueOnce(mockResponse);
+    it("returns the inner data payload (not the full response)", async () => {
+      mockedApi.get.mockResolvedValueOnce(mockApiResponse);
 
       const result = await getAdminDashboardStats("30d");
 
-      expect(result).toEqual(mockResponse.data);
-    });
-
-    it("includes authorization headers when token is available", async () => {
-      mockedAxios.get.mockResolvedValueOnce(mockResponse);
-      mockLocalStorage.getItem.mockReturnValue("test-token");
-
-      await getAdminDashboardStats("30d");
-
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          headers: { Authorization: "Bearer test-token" },
-        })
-      );
-    });
-
-    it("works without authorization headers when no token", async () => {
-      mockedAxios.get.mockResolvedValueOnce(mockResponse);
-      mockLocalStorage.getItem.mockReturnValue(null);
-
-      await getAdminDashboardStats("30d");
-
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        expect.any(String),
-        expect.objectContaining({
-          headers: {},
-        })
-      );
+      // Service should return the inner `data` object, not the full { success, data } response
+      expect(result).toEqual(mockApiResponse.data);
     });
   });
 
   describe("getVendorDashboardStats", () => {
-    const mockResponse = {
+    // Simulates the response from the api interceptor (response.data from backend)
+    const mockApiResponse = {
+      success: true,
       data: {
-        success: true,
-        data: {
-          overview: {
-            totalProducts: 25,
-            totalOrders: 15,
-            totalRevenue: 5000,
-          },
+        overview: {
+          totalProducts: 25,
+          totalOrders: 15,
+          totalRevenue: 5000,
         },
+        growthRates: {
+          revenueGrowthRate: 10,
+          orderGrowthRate: 5,
+        },
+        recentOrders: [],
+        topProducts: [],
+        leastSellingProducts: [],
+        lowStockProducts: [],
+        monthlyStats: [],
+        period: "30d",
       },
     };
 
     it("calls API with period parameter", async () => {
-      mockedAxios.get.mockResolvedValueOnce(mockResponse);
+      mockedApi.get.mockResolvedValueOnce(mockApiResponse);
 
       await getVendorDashboardStats("90d");
 
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        expect.stringContaining("/dashboard/vendor"),
+      expect(mockedApi.get).toHaveBeenCalledWith(
+        "/dashboard/vendor",
         expect.objectContaining({
           params: { period: "90d" },
-          headers: { Authorization: "Bearer mock-token" },
           withCredentials: true,
         })
       );
     });
 
     it("calls API with custom date range", async () => {
-      mockedAxios.get.mockResolvedValueOnce(mockResponse);
+      mockedApi.get.mockResolvedValueOnce(mockApiResponse);
 
       await getVendorDashboardStats(undefined, "2024-02-01", "2024-02-29");
 
-      expect(mockedAxios.get).toHaveBeenCalledWith(
-        expect.stringContaining("/dashboard/vendor"),
+      expect(mockedApi.get).toHaveBeenCalledWith(
+        "/dashboard/vendor",
         expect.objectContaining({
           params: {
             startDate: "2024-02-01",
             endDate: "2024-02-29",
           },
-          headers: { Authorization: "Bearer mock-token" },
           withCredentials: true,
         })
       );
     });
 
-    it("returns the response data", async () => {
-      mockedAxios.get.mockResolvedValueOnce(mockResponse);
+    it("returns the inner data payload (not the full response)", async () => {
+      mockedApi.get.mockResolvedValueOnce(mockApiResponse);
 
       const result = await getVendorDashboardStats("30d");
 
-      expect(result).toEqual(mockResponse.data);
+      // Service should return the inner `data` object, not the full { success, data } response
+      expect(result).toEqual(mockApiResponse.data);
     });
   });
 });

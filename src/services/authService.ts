@@ -35,7 +35,7 @@ export async function logout() {
     `/auth/logout`,
     {},
   );
-  return res.data;
+  return res;
 }
 
 export async function changePassword(
@@ -53,27 +53,31 @@ export async function changePassword(
 
   const res = await api.put(`/auth/change-password`, payload, {
   });
-  return res.data;
+  return res;
 }
 
 export async function getPasswordStatus() {
   const res = await api.get(`/auth/password-status`, {
   });
-  return res.data;
+  return res;
 }
 
 export async function getMe() {
   const res = await api.get(`/auth/me`);
-  return res.data;
+  return res;
 }
 
 export async function getRefresh() {
-  const params = {
-    refreshToken: localStorage.getItem("refreshToken")
-  };
+  const refreshToken = localStorage.getItem("refreshToken");
 
-  const res = await axios.post(`${API_BASE}/auth/refresh`, {
-    params
-  });
+  const res = await axios.post(
+    `${API_BASE}/auth/refresh`,
+    { refreshToken },
+    {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    }
+  );
   return res.data;
 }

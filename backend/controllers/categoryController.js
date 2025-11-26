@@ -8,7 +8,13 @@ import Product from "../models/Product.js";
 // @access  Private (Superadmin, Vendor)
 export const getCategories = asyncHandler(async (req, res, next) => {
   let query = {};
-  const { vendorId } = req.query;
+  const {
+    vendorId,
+    page = 1,
+    limit = 10,
+    search,
+    sort = "-createdAt",
+  } = req.query;
 
   // For vendors, only show their categories
   if (req.user.role === "vendor") {
@@ -27,14 +33,37 @@ export const getCategories = asyncHandler(async (req, res, next) => {
     // If no vendorId provided, show all categories (existing behavior)
   }
 
-  const categories = await Category.find(query).populate(
-    "vendorId",
-    "businessName"
-  );
+  // Search functionality
+  if (search) {
+    query.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { description: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  // Calculate pagination
+  const skip = (page - 1) * limit;
+
+  // Execute query and count in parallel for better performance
+  const [categories, total] = await Promise.all([
+    Category.find(query)
+      .populate("vendorId", "businessName")
+      .sort(sort)
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean(),
+    Category.countDocuments(query),
+  ]);
 
   res.status(200).json({
     success: true,
     data: categories,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total,
+      pages: Math.ceil(total / limit),
+    },
   });
 });
 
