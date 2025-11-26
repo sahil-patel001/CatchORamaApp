@@ -12,14 +12,15 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { useQuery } from "@tanstack/react-query";
-import { getVendorProfile } from "@/services/vendorService";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getVendorProfile, updateVendorProfile } from "@/services/vendorService";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function Settings() {
   const { user, changePassword, logout, isLoading, getPasswordStatus } =
     useAuth();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [deleteAccountOpen, setDeleteAccountOpen] = useState(false);
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
@@ -36,6 +37,12 @@ export function Settings() {
     businessPhone: "",
     businessAddress: "",
   });
+  const [originalBusinessData, setOriginalBusinessData] = useState({
+    businessName: "",
+    businessEmail: "",
+    businessPhone: "",
+    businessAddress: "",
+  });
 
   // Fetch vendor profile data
   const {
@@ -45,13 +52,17 @@ export function Settings() {
   } = useQuery({
     queryKey: ["vendorProfile"],
     queryFn: getVendorProfile,
-    enabled: !!user,
+    enabled: !!user && user.role === "vendor",
+    retry: 1, // Only retry once to avoid multiple failed requests
+    retryDelay: 1000,
+    // Don't throw error if vendor profile is not found - it might be a new user
+    throwOnError: false,
   });
 
   // Update business data when vendor profile is loaded
   useEffect(() => {
     if (vendorProfile) {
-      setBusinessData({
+      const profileData = {
         businessName: vendorProfile.businessName || "",
         businessEmail: vendorProfile.user?.email || user?.email || "",
         businessPhone: vendorProfile.phone || "",
@@ -67,9 +78,50 @@ export function Settings() {
             .filter(Boolean)
             .join(", ") ||
           "",
-      });
+      };
+      setBusinessData(profileData);
+      setOriginalBusinessData(profileData); // Store original data for comparison
+    } else if (user && !vendorLoading) {
+      // If no vendor profile exists yet (new user), populate with user data
+      const initialData = {
+        businessName: "",
+        businessEmail: user.email || "",
+        businessPhone: "",
+        businessAddress: "",
+      };
+      setBusinessData(initialData);
+      setOriginalBusinessData(initialData);
     }
-  }, [vendorProfile, user]);
+  }, [vendorProfile, user, vendorLoading]);
+
+  // Mutation for updating vendor profile
+  const updateVendorMutation = useMutation({
+    mutationFn: updateVendorProfile,
+    onSuccess: () => {
+      toast({
+        title: "Success",
+        description: "Business information updated successfully",
+      });
+      // Invalidate and refetch vendor profile
+      queryClient.invalidateQueries({ queryKey: ["vendorProfile"] });
+      // Update original data to match current data after successful save
+      setOriginalBusinessData(businessData);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update business information",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Check if business data has changed
+  const hasBusinessDataChanged = 
+    businessData.businessName !== originalBusinessData.businessName ||
+    businessData.businessEmail !== originalBusinessData.businessEmail ||
+    businessData.businessPhone !== originalBusinessData.businessPhone ||
+    businessData.businessAddress !== originalBusinessData.businessAddress;
 
   // Fetch password status on component mount
   useEffect(() => {
@@ -124,12 +176,19 @@ export function Settings() {
     }
   };
 
-  const handleBusinessUpdate = (e: React.FormEvent) => {
+  const handleBusinessUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
-    toast({
-      title: "Success",
-      description: "Business information updated successfully",
-    });
+    
+    // Prepare update data
+    const updateData = {
+      businessName: businessData.businessName,
+      email: businessData.businessEmail,
+      phone: businessData.businessPhone,
+      address: businessData.businessAddress,
+    };
+
+    // Call the mutation
+    updateVendorMutation.mutate(updateData);
   };
 
   const handleDeleteAccount = () => {
@@ -201,12 +260,20 @@ export function Settings() {
                 <Skeleton className="h-10 w-32" />
               </div>
             ) : vendorError ? (
-              <div className="text-center py-4">
-                <p className="text-destructive">
-                  Failed to load business information
+              <div className="text-center py-4 space-y-2">
+                <p className="text-muted-foreground text-sm">
+                  {vendorError.message?.includes("404") || vendorError.message?.includes("not found")
+                    ? "No business profile found. You can create one by filling out the form below."
+                    : "Unable to load business information. Please try again later."}
                 </p>
+                {!vendorError.message?.includes("404") && !vendorError.message?.includes("not found") && (
+                  <p className="text-xs text-destructive">
+                    Error: {vendorError instanceof Error ? vendorError.message : "Unknown error"}
+                  </p>
+                )}
               </div>
-            ) : (
+            ) : null}
+            {(vendorProfile || (!vendorLoading && !vendorError) || (vendorError && (vendorError.message?.includes("404") || vendorError.message?.includes("not found")))) && (
               <form onSubmit={handleBusinessUpdate} className="space-y-4">
                 <div className="grid gap-2">
                   <Label htmlFor="business-name">Business Name</Label>
@@ -263,7 +330,28 @@ export function Settings() {
                     }
                   />
                 </div>
-                <Button type="submit">Update Business Info</Button>
+                <div className="flex gap-2">
+                  <Button 
+                    type="submit" 
+                    disabled={updateVendorMutation.isPending || !hasBusinessDataChanged}
+                  >
+                    {updateVendorMutation.isPending
+                      ? "Updating..."
+                      : vendorProfile
+                      ? "Update Business Info"
+                      : "Create Business Profile"}
+                  </Button>
+                  {hasBusinessDataChanged && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setBusinessData(originalBusinessData)}
+                      disabled={updateVendorMutation.isPending}
+                    >
+                      Reset
+                    </Button>
+                  )}
+                </div>
               </form>
             )}
           </CardContent>

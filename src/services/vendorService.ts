@@ -6,25 +6,23 @@ const API_BASE_URL = `/vendors`;
 // Get the current user's vendor profile
 export async function getVendorProfile(): Promise<Vendor> {
   try {
-    // api interceptor returns response.data => { success, data: { user } }
-    const body = await api.get(
-      `/auth/me`,
-      {
-        withCredentials: true,
-      }
-    );
-
-    // If the user has a vendor profile, fetch it
-    if ((body as any).data.user.role === "vendor") {
-      const vendorBody = await api.get(`${API_BASE_URL}/profile`, {
-        withCredentials: true,
-      });
-      return (vendorBody as any).data.vendor;
-    }
-
-    throw new Error("User is not a vendor");
-  } catch (error) {
+    // Directly fetch vendor profile - the backend will handle auth and role checking
+    const vendorBody = await api.get(`${API_BASE_URL}/profile`, {
+      withCredentials: true,
+    });
+    return (vendorBody as any).data.vendor;
+  } catch (error: any) {
     console.error("Error fetching vendor profile:", error);
+    
+    // Provide more specific error messages
+    if (error.response?.status === 401) {
+      throw new Error("Authentication required. Please log in again.");
+    } else if (error.response?.status === 403) {
+      throw new Error("Access denied. Only vendors can access this profile.");
+    } else if (error.response?.status === 404) {
+      throw new Error("Vendor profile not found. Please contact support.");
+    }
+    
     throw error;
   }
 }
@@ -119,6 +117,45 @@ export async function updateVendor(
     console.error("Failed to update vendor:", error);
     throw new Error(
       (error as any).error?.message || "Failed to update vendor"
+    );
+  }
+}
+
+// Update current user's vendor profile
+export async function updateVendorProfile(data: {
+  businessName?: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+}): Promise<Vendor> {
+  try {
+    // First get the vendor profile to get the ID
+    const profile = await getVendorProfile();
+    
+    // Then update using the vendor ID
+    const updateData: any = {};
+    if (data.businessName) updateData.businessName = data.businessName;
+    if (data.email) updateData.email = data.email;
+    if (data.phone) updateData.phone = data.phone;
+    if (data.address) updateData.address = data.address;
+
+    const body = await api.put(`${API_BASE_URL}/${profile._id}`, updateData, {
+      withCredentials: true,
+    });
+    return (body as any).data?.vendor;
+  } catch (error: any) {
+    console.error("Failed to update vendor profile:", error);
+    
+    if (error.response?.status === 401) {
+      throw new Error("Authentication required. Please log in again.");
+    } else if (error.response?.status === 403) {
+      throw new Error("You don't have permission to update this profile.");
+    } else if (error.response?.status === 404) {
+      throw new Error("Vendor profile not found.");
+    }
+    
+    throw new Error(
+      error.response?.data?.error?.message || "Failed to update vendor profile"
     );
   }
 }
