@@ -24,6 +24,8 @@ export const getProducts = asyncHandler(async (req, res, next) => {
     maxPrice,
     inStock,
     sort = "-createdAt",
+    status,
+    vendorId,
   } = req.query;
 
   // Build query
@@ -44,18 +46,40 @@ export const getProducts = asyncHandler(async (req, res, next) => {
     }
   }
 
-  // Search functionality - use text index when available
-  if (search) {
-    // First try text search if it's a full-text search
-    if (search.length > 2) {
-      query.$text = { $search: search };
+  // Filter by status (for admins)
+  if (status && status !== "all") {
+    if (status === "out_of_stock") {
+      query.stock = { $lte: 0 };
     } else {
-      // Fallback to regex for short searches
-      query.$or = [
-        { name: { $regex: search, $options: "i" } },
-        { description: { $regex: search, $options: "i" } },
-        { category: { $regex: search, $options: "i" } },
-      ];
+      query.status = status;
+    }
+  }
+
+  // Filter by vendor (for admins)
+  if (vendorId && vendorId !== "all" && req.user.role === "superadmin") {
+    query.vendorId = vendorId;
+  }
+
+  // Search functionality - improved to handle partial prefixes
+  if (search) {
+    const trimmedSearch = String(search).trim();
+    
+    if (trimmedSearch) {
+      // Check if it's a multi-word query (contains spaces)
+      const isMultiWord = trimmedSearch.includes(' ');
+      
+      if (isMultiWord) {
+        // Use text search for multi-word queries to leverage the text index
+        query.$text = { $search: trimmedSearch };
+      } else {
+        // For single-word queries, use regex for partial/prefix matching
+        // This allows searching for "fro" to match "Frozen", "oli" to match "Olive", etc.
+        query.$or = [
+          { name: { $regex: trimmedSearch, $options: "i" } },
+          { description: { $regex: trimmedSearch, $options: "i" } },
+          { category: { $regex: trimmedSearch, $options: "i" } },
+        ];
+      }
     }
   }
 

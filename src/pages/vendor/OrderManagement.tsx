@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { DataTable } from "@/components/DataTable";
 import { ViewOrderModal } from "@/components/modals/ViewOrderModal";
 import { StatusFilter } from "@/components/StatusFilter";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Eye, Download } from "lucide-react";
@@ -44,6 +45,8 @@ export function OrderManagement() {
   const [statusFilter, setStatusFilter] = useState<OrderStatus>("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 400);
 
   const {
     data: ordersData,
@@ -52,8 +55,9 @@ export function OrderManagement() {
     isError,
     error,
   } = useQuery<OrdersResponse>({
-    queryKey: ["orders", page, limit, statusFilter],
-    queryFn: () => orderService.getOrders(page, limit, undefined, statusFilter),
+    queryKey: ["orders", page, limit, debouncedSearch, statusFilter],
+    queryFn: () => orderService.getOrders(page, limit, debouncedSearch || undefined, statusFilter),
+    keepPreviousData: true,
   });
   // Service now returns { orders, pagination } directly
   const orders = ordersData?.orders || [];
@@ -175,6 +179,11 @@ export function OrderManagement() {
           setPage(1);
         }}
         isLoading={isLoading || isFetching}
+        searchValue={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
       />
 
       {selectedOrder && (

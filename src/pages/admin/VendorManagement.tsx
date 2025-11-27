@@ -7,6 +7,7 @@ import { ViewVendorModal } from "@/components/modals/ViewVendorModal";
 import { EditVendorModal } from "@/components/modals/EditVendorModal";
 import { ManageInvoicePrefixModal } from "@/components/modals/ManageInvoicePrefixModal";
 import { StatusFilter, VENDOR_STATUS_OPTIONS } from "@/components/StatusFilter";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/utils";
@@ -50,8 +51,10 @@ export function VendorManagement() {
   const [statusFilter, setStatusFilter] = useState<VendorStatus>("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 400);
 
-  // Fetch vendors using React Query with status filter
+  // Fetch vendors using React Query with status filter and search
   const {
     data: vendorsData,
     isLoading,
@@ -59,8 +62,9 @@ export function VendorManagement() {
     isError,
     error: queryError,
   } = useQuery<VendorsResponse>({
-    queryKey: ["vendors", page, limit, statusFilter],
-    queryFn: () => fetchVendors("", page, limit, statusFilter),
+    queryKey: ["vendors", page, limit, statusFilter, debouncedSearch],
+    queryFn: () => fetchVendors(debouncedSearch, page, limit, statusFilter),
+    keepPreviousData: true,
   });
 
   const vendors = vendorsData?.vendors || [];
@@ -336,6 +340,11 @@ export function VendorManagement() {
           setPage(1);
         }}
         isLoading={isLoading || isFetching}
+        searchValue={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
       />
 
       <AddVendorModal

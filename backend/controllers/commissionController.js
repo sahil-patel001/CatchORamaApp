@@ -27,12 +27,30 @@ export const getCommissions = asyncHandler(async (req, res, next) => {
     endDate,
     sortBy = "createdAt",
     sortOrder = "desc",
+    search,
   } = req.query;
 
   // Build filter object
   const filter = {};
   if (status) filter.status = status;
-  if (vendorId) filter.vendorId = vendorId;
+  
+  // Handle vendor filtering with search support
+  if (vendorId) {
+    filter.vendorId = vendorId;
+  } else if (search && search.trim()) {
+    // If search is provided and no explicit vendorId, search by vendor business name
+    const matchingVendors = await Vendor.find({
+      businessName: { $regex: search, $options: "i" },
+    }).select("_id").lean();
+    
+    if (matchingVendors.length > 0) {
+      filter.vendorId = { $in: matchingVendors.map(v => v._id) };
+    } else {
+      // No matching vendors found, return empty result
+      filter.vendorId = { $in: [] };
+    }
+  }
+  
   if (startDate || endDate) {
     filter["period.startDate"] = {};
     if (startDate) filter["period.startDate"].$gte = new Date(startDate);

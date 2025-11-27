@@ -11,6 +11,9 @@ interface GetProductsParams {
   category?: string;
   minPrice?: number;
   maxPrice?: number;
+  search?: string;
+  status?: string;
+  vendorId?: string;
 }
 
 /**

@@ -8,27 +8,32 @@ import { Input } from "@/components/ui/input";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { ViewSalesModal } from "@/components/modals/ViewSalesModal";
 
 export default function InvoiceManagement() {
   const { toast } = useToast();
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 400);
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null);
   const [report, setReport] = useState<SalesReport | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [period, setPeriod] = useState<ReportPeriod>("weekly");
   const [loadingReport, setLoadingReport] = useState(false);
 
-  // Fetch all vendors
+  // Fetch all vendors with debounced search
   const {
-    data: vendors = [],
+    data: vendorsData = { vendors: [] },
     isLoading,
     isError,
     error,
   } = useQuery({
-    queryKey: ["vendors", search],
-    queryFn: () => fetchVendors(search, 1, 100, "all"),
+    queryKey: ["vendors", debouncedSearch],
+    queryFn: () => fetchVendors(debouncedSearch, 1, 100, "all"),
+    keepPreviousData: true,
   });
+
+  const vendors = vendorsData.vendors || [];
 
   const handleViewReport = async (vendor: Vendor) => {
     setSelectedVendor(vendor);
@@ -75,7 +80,7 @@ export default function InvoiceManagement() {
         </div>
       ) : (
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {vendors.map((vendor: Vendor) => (
+          {vendors.map((vendor) => (
             <Card key={vendor._id}>
               <CardHeader>
                 <CardTitle>{vendor.businessName}</CardTitle>

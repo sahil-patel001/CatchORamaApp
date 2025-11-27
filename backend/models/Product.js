@@ -505,10 +505,31 @@ productSchema.statics.findByVendor = function (vendorId, options = {}) {
 
 // Static method to search products
 productSchema.statics.search = function (searchTerm, options = {}) {
+  const trimmedSearch = String(searchTerm || "").trim();
+  
+  if (!trimmedSearch) {
+    // Return empty query if no search term
+    return this.find({ _id: null });
+  }
+
   const query = {
-    $text: { $search: searchTerm },
     status: { $ne: "archived" }, // Exclude archived products by default
   };
+
+  // Check if it's a multi-word query (contains spaces)
+  const isMultiWord = trimmedSearch.includes(' ');
+  
+  if (isMultiWord) {
+    // Use text search for multi-word queries to leverage the text index
+    query.$text = { $search: trimmedSearch };
+  } else {
+    // For single-word queries, use regex for partial/prefix matching
+    query.$or = [
+      { name: { $regex: trimmedSearch, $options: "i" } },
+      { description: { $regex: trimmedSearch, $options: "i" } },
+      { category: { $regex: trimmedSearch, $options: "i" } },
+    ];
+  }
 
   if (options.category) query.category = options.category;
   if (options.vendorId) query.vendorId = options.vendorId;
@@ -516,9 +537,15 @@ productSchema.statics.search = function (searchTerm, options = {}) {
     delete query.status; // Remove status filter to include archived products
   }
 
-  return this.find(query, { score: { $meta: "textScore" } }).sort({
-    score: { $meta: "textScore" },
-  });
+  // Use text score sorting only for multi-word queries
+  if (isMultiWord) {
+    return this.find(query, { score: { $meta: "textScore" } }).sort({
+      score: { $meta: "textScore" },
+    });
+  } else {
+    // For regex queries, sort by name
+    return this.find(query).sort({ name: 1 });
+  }
 };
 
 // Static method to find products with barcodes

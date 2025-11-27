@@ -12,6 +12,7 @@ import {
   BarcodeOperationStatus,
 } from "@/components/ui/BarcodeLoadingState";
 import { useBarcodeOperations } from "@/hooks/useBarcodeOperations";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -43,12 +44,36 @@ type ProductStatus = "all" | "active" | "inactive" | "draft" | "out_of_stock";
 export function ProductManagement() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { toast } = useToast();
+  const { state: barcodeState, generateBulkBarcodes } = useBarcodeOperations();
+  
+  // State declarations - must come before useQuery
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ProductStatus>("all");
+  const [vendorFilter, setVendorFilter] = useState<string>("all");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+  const [viewModalOpen, setViewModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
+  const [barcodeModalOpen, setBarcodeModalOpen] = useState(false);
+  const [pdfGenerating, setPdfGenerating] = useState(false);
+  
+  const debouncedSearch = useDebouncedValue(search, 400);
   
   const { data, isLoading, isError, error, isSuccess, isFetching } = useQuery({
-    queryKey: ["products", page, limit],
-    queryFn: () => productService.getProducts({ page, limit }),
+    queryKey: ["products", page, limit, debouncedSearch, statusFilter, vendorFilter],
+    queryFn: () => productService.getProducts({ 
+      page, 
+      limit, 
+      search: debouncedSearch || undefined,
+      status: statusFilter !== "all" ? statusFilter : undefined,
+      vendorId: vendorFilter !== "all" ? vendorFilter : undefined,
+    }),
+    keepPreviousData: true,
   });
 
   // Defensive fallback: if query succeeded but data is undefined, log warning and use empty array
@@ -60,18 +85,6 @@ export function ProductManagement() {
 
   const products: Product[] = data?.products ?? [];
   const pagination = data?.pagination;
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [addModalOpen, setAddModalOpen] = useState(false);
-  const [viewModalOpen, setViewModalOpen] = useState(false);
-  const [editModalOpen, setEditModalOpen] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedProducts, setSelectedProducts] = useState<Product[]>([]);
-  const [statusFilter, setStatusFilter] = useState<ProductStatus>("all");
-  const [vendorFilter, setVendorFilter] = useState<string>("all");
-  const [barcodeModalOpen, setBarcodeModalOpen] = useState(false);
-  const [pdfGenerating, setPdfGenerating] = useState(false);
-  const { toast } = useToast();
-  const { state: barcodeState, generateBulkBarcodes } = useBarcodeOperations();
 
   // Check if user is admin for barcode features
   const isAdmin = user?.role === "vendor";
@@ -224,16 +237,16 @@ export function ProductManagement() {
       render: (_: unknown, row: Product) => {
         const status = (row as any).status;
         const statusColors = {
-          active: "bg-green-100 text-green-800",
-          inactive: "bg-red-100 text-red-800",
-          draft: "bg-yellow-100 text-yellow-800",
-          out_of_stock: "bg-gray-100 text-gray-800",
+          active: "bg-green-100 text-green-800 hover:bg-green-200 dark:hover:bg-green-100",
+          inactive: "bg-red-100 text-red-800 hover:bg-red-200 dark:hover:bg-red-100",
+          draft: "bg-yellow-100 text-yellow-800 hover:bg-yellow-200 dark:hover:bg-yellow-100",
+          out_of_stock: "bg-gray-100 text-gray-800 hover:bg-gray-200 dark:hover:bg-gray-100",
         };
         return (
           <Badge
             className={
               statusColors[status as keyof typeof statusColors] ||
-              "bg-gray-100 text-gray-800"
+              "bg-gray-100 text-gray-800 hover:bg-gray-200 dark:hover:bg-gray-100"
             }
           >
             {status ? status.replace("_", " ").toUpperCase() : "UNKNOWN"}
@@ -350,78 +363,35 @@ export function ProductManagement() {
     }
   };
 
-  // Helper function to filter products
-  const getFilteredProducts = React.useCallback(
-    (statusVal: string, vendorVal: string) => {
-      return products.filter((product: Product) => {
-        const status = (product as any).status;
-        const vendorName = product.vendor?.businessName;
-        const statusMatch = statusVal === "all" || status === statusVal;
-        const vendorMatch = vendorVal === "all" || vendorName === vendorVal;
-        return statusMatch && vendorMatch;
-      });
-    },
-    [products]
-  );
-
   const handleStatusChange = (value: string) => {
     setStatusFilter(value as ProductStatus);
-    // Clear selections that are no longer visible due to filter change
+    setPage(1); // Reset to first page when filter changes
+    // Clear selections when filter changes
     if (selectedProducts.length > 0) {
-      const newFilteredProducts = getFilteredProducts(value, vendorFilter);
-
-      const filteredProductIds = new Set(
-        newFilteredProducts.map((p) => p._id || p.id)
-      );
-      const visibleSelections = selectedProducts.filter((product) =>
-        filteredProductIds.has(product._id || product.id)
-      );
-
-      if (visibleSelections.length !== selectedProducts.length) {
-        setSelectedProducts(visibleSelections);
-        if (visibleSelections.length === 0 && selectedProducts.length > 0) {
-          toast({
-            title: "Selections cleared",
-            description:
-              "Selected products are no longer visible with current filters",
-            variant: "default",
-          });
-        }
-      }
+      setSelectedProducts([]);
+      toast({
+        title: "Selections cleared",
+        description:
+          "Selected products cleared due to filter change",
+        variant: "default",
+      });
     }
   };
 
   const handleVendorChange = (value: string) => {
     setVendorFilter(value);
-    // Clear selections that are no longer visible due to filter change
+    setPage(1); // Reset to first page when filter changes
+    // Clear selections when filter changes
     if (selectedProducts.length > 0) {
-      const newFilteredProducts = getFilteredProducts(statusFilter, value);
-
-      const filteredProductIds = new Set(
-        newFilteredProducts.map((p) => p._id || p.id)
-      );
-      const visibleSelections = selectedProducts.filter((product) =>
-        filteredProductIds.has(product._id || product.id)
-      );
-
-      if (visibleSelections.length !== selectedProducts.length) {
-        setSelectedProducts(visibleSelections);
-        if (visibleSelections.length === 0 && selectedProducts.length > 0) {
-          toast({
-            title: "Selections cleared",
-            description:
-              "Selected products are no longer visible with current filters",
-            variant: "default",
-          });
-        }
-      }
+      setSelectedProducts([]);
+      toast({
+        title: "Selections cleared",
+        description:
+          "Selected products cleared due to filter change",
+        variant: "default",
+      });
     }
   };
-
-  // Filter products by status and vendor
-  const filteredProducts = React.useMemo(() => {
-    return getFilteredProducts(statusFilter, vendorFilter);
-  }, [getFilteredProducts, statusFilter, vendorFilter]);
 
   const handleSelectionChange = (selectedItems: Product[]) => {
     setSelectedProducts(selectedItems);
@@ -531,12 +501,12 @@ export function ProductManagement() {
   // Count of visible selected products
   const visibleSelectedCount = React.useMemo(() => {
     const visibleProductIds = new Set(
-      filteredProducts.map((p) => p._id || p.id)
+      products.map((p) => p._id || p.id)
     );
     return selectedProducts.filter((product) =>
       visibleProductIds.has(product._id || product.id)
     ).length;
-  }, [filteredProducts, selectedProducts]);
+  }, [products, selectedProducts]);
 
   // Generate vendor options from products
   const vendorOptions = React.useMemo(() => {
@@ -677,7 +647,7 @@ export function ProductManagement() {
         )}
 
       <DataTable
-        data={filteredProducts}
+        data={products}
         columns={columns}
         searchKey="name"
         searchPlaceholder="Search products..."
@@ -701,6 +671,11 @@ export function ProductManagement() {
           setPage(1);
         }}
         isLoading={isLoading || isFetching}
+        searchValue={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
       />
       <AddProductModal
         open={addModalOpen}

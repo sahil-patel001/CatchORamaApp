@@ -21,6 +21,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import {
   Select,
   SelectContent,
@@ -75,6 +76,8 @@ export default function CommissionManagement() {
   const [vendorId, setVendorId] = useState<string>("all");
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(20);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 400);
 
   // Date range picker state - using preset periods with weekly as default per user preference
   const dateRangePicker = useDateRangePicker("7d");
@@ -170,6 +173,7 @@ export default function CommissionManagement() {
       effectiveDateRange,
       page,
       limit,
+      debouncedSearch,
     ],
     queryFn: async () => {
       const params = {
@@ -179,12 +183,14 @@ export default function CommissionManagement() {
         // ...effectiveDateRange,
         page,
         limit,
+        search: debouncedSearch || undefined,
       };
       console.log("Fetching commissions with params:", params);
       const result = await getCommissions(params);
       console.log("Commission API response:", result);
       return result;
     },
+    keepPreviousData: true,
   });
 
   // Fetch vendors for dropdown - increased limit to get all vendors
@@ -933,6 +939,11 @@ export default function CommissionManagement() {
               setPage(1);
             }}
             isLoading={commissionsLoading || commissionsFetching}
+            searchValue={search}
+            onSearchChange={(value) => {
+              setSearch(value);
+              setPage(1);
+            }}
           />
         </CardContent>
       </Card>
