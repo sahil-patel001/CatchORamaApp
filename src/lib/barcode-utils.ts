@@ -34,7 +34,7 @@ export interface BarcodeImageOptions {
 
 /**
  * Generate barcode text following the 32-character format
- * Format: {VendorPrefix}-{ProductName}-${Price}
+ * Format: ${Price}-{ProductName}-{VendorPrefix}
  * @param product - Product data
  * @param vendorPrefix - Vendor prefix (uses stored vendorPrefix from product.vendor)
  * @returns Formatted barcode text
@@ -54,9 +54,9 @@ export function generateBarcodeText(
   const price = "$" + (product.discountPrice || product.price).toFixed(2);
 
   // Calculate remaining space for product name
-  const prefixPart = `${prefix}-`;
-  const pricePart = `-${price}`;
-  const maxProductNameLength = 32 - prefixPart.length - pricePart.length;
+  const pricePart = `${price}-`;
+  const prefixPart = `-${prefix}`;
+  const maxProductNameLength = 32 - pricePart.length - prefixPart.length;
 
   // Truncate product name from the end if necessary
   let productName = product.name;
@@ -64,18 +64,18 @@ export function generateBarcodeText(
     productName = productName.substring(0, maxProductNameLength);
   }
 
-  // Construct final barcode text
-  const barcodeText = `${prefix}-${productName}-${price}`;
+  // Construct final barcode text with new order: price first, vendor prefix last
+  const barcodeText = `${price}-${productName}-${prefix}`;
 
   // Ensure it doesn't exceed 32 characters (safety check)
   if (barcodeText.length > 32) {
     // If still too long, truncate product name further
-    const availableLength = 32 - prefix.length - price.length - 2; // 2 for the hyphens
+    const availableLength = 32 - price.length - prefix.length - 2; // 2 for the hyphens
     const truncatedName = productName.substring(
       0,
       Math.max(1, availableLength)
     );
-    return `${prefix}-${truncatedName}-${price}`;
+    return `${price}-${truncatedName}-${prefix}`;
   }
 
   return barcodeText;
@@ -106,17 +106,17 @@ export function validateBarcodeFormat(barcodeText: string): {
     );
   }
 
-  // Check format pattern: should have at least 2 hyphens and end with price$
+  // Check format pattern: should have at least 2 hyphens
   const parts = barcodeText.split("-");
   if (parts.length < 3) {
     errors.push(
-      "Barcode should follow format: {VendorPrefix}-{ProductName}-${Price}"
+      "Barcode should follow format: ${Price}-{ProductName}-{VendorPrefix}"
     );
   }
 
-  // Check if ends with price format ($ followed by number)
-  if (!barcodeText.match(/-\$\d+\.\d{2}$/)) {
-    errors.push("Barcode should end with price in format: -$XX.XX");
+  // Check if starts with price format ($ followed by number)
+  if (!barcodeText.match(/^\$\d+\.\d{2}-/)) {
+    errors.push("Barcode should start with price in format: $XX.XX-");
   }
 
   // Check for invalid characters (only alphanumeric, hyphens, dots, and $ allowed)
@@ -301,12 +301,12 @@ export function parseBarcodeText(barcodeText: string): {
     const parts = barcodeText.split("-");
     if (parts.length < 3) return null;
 
-    const vendorPrefix = parts[0];
-    const pricePart = parts[parts.length - 1]; // Last part should be price
+    const pricePart = parts[0]; // First part should be price
+    const vendorPrefix = parts[parts.length - 1]; // Last part should be vendor prefix
     const productName = parts.slice(1, -1).join("-"); // Middle parts form product name
 
-    // Extract price value
-    const priceMatch = pricePart.match(/(\d+\.\d{2})\$$/);
+    // Extract price value (price starts with $)
+    const priceMatch = pricePart.match(/^\$(\d+\.\d{2})$/);
     if (!priceMatch) return null;
 
     const priceValue = parseFloat(priceMatch[1]);

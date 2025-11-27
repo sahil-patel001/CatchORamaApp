@@ -160,11 +160,18 @@ This fix ensures 100% compatibility with:
 - Updated validation rules to match new format
 - More intuitive price display with $ prefix
 
+### 14. ✅ **Barcode Label Order Change**
+- **Before**: Format "{VendorPrefix}-{ProductName}-${Price}"
+- **After**: Format **"${Price}-{ProductName}-{VendorPrefix}"**
+- Price with $ sign now appears first
+- Vendor prefix now appears last
+- Updated validation and parsing rules to match new order
+
 ### Final Technical Specifications:
 - **Canvas**: 1000x500px high-resolution
 - **Font**: 30px Arial for maximum readability
-- **Format**: {VendorPrefix}-{ProductName}-${Price}
-- **Example**: "VD01-Sample Product-$29.99"
+- **Format**: ${Price}-{ProductName}-{VendorPrefix}
+- **Example**: "$29.99-Sample Product-VD01"
 
 ---
 

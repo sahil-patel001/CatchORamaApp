@@ -23,12 +23,12 @@ const barcodeSchema = new mongoose.Schema(
       minlength: [5, "Barcode text must be at least 5 characters"],
       validate: {
         validator: function (value) {
-          // Validate barcode format: {VendorPrefix}-{ProductName}-{Price}$
-          const barcodeRegex = /^[A-Za-z0-9]+-[A-Za-z0-9]+-\d+\.\d{2}\$$/;
+          // Validate barcode format: ${Price}-{ProductName}-{VendorPrefix}
+          const barcodeRegex = /^\$\d+\.\d{2}-[A-Za-z0-9]+-[A-Za-z0-9]+$/;
           return barcodeRegex.test(value);
         },
         message:
-          "Barcode text must follow format: {VendorPrefix}-{ProductName}-{Price}$",
+          "Barcode text must follow format: ${Price}-{ProductName}-{VendorPrefix}",
       },
     },
     vendorPrefix: {
@@ -310,7 +310,7 @@ barcodeSchema.methods.validateBarcode = function () {
   const errors = [];
 
   // Basic format validation
-  const barcodeRegex = /^[A-Za-z0-9]+-[A-Za-z0-9]+-\d+\.\d{2}\$$/;
+  const barcodeRegex = /^\$\d+\.\d{2}-[A-Za-z0-9]+-[A-Za-z0-9]+$/;
   if (!barcodeRegex.test(this.barcodeText)) {
     errors.push("Invalid barcode format");
   }
@@ -321,7 +321,7 @@ barcodeSchema.methods.validateBarcode = function () {
   }
 
   // Component validation
-  const expectedBarcode = `${this.vendorPrefix}-${this.productName}-${this.formattedPrice}`;
+  const expectedBarcode = `${this.formattedPrice}-${this.productName}-${this.vendorPrefix}`;
   if (this.barcodeText !== expectedBarcode) {
     errors.push("Barcode text does not match components");
   }

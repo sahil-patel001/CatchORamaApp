@@ -43,12 +43,12 @@ describe("Barcode CRUD Controller Tests", () => {
     it("should have proper request structure for updateProductBarcode", () => {
       req.params = { productId: "product123" };
       req.body = {
-        barcode: "TS-USB Cable-15.99$",
+        barcode: "$15.99-USB Cable-TS",
         validateOnly: false,
       };
 
       expect(req.params.productId).toBe("product123");
-      expect(req.body.barcode).toBe("TS-USB Cable-15.99$");
+      expect(req.body.barcode).toBe("$15.99-USB Cable-TS");
       expect(req.body.validateOnly).toBe(false);
     });
 
@@ -119,7 +119,7 @@ describe("Barcode CRUD Controller Tests", () => {
       expect(req.body.barcode).toBeFalsy();
 
       // Test valid barcode
-      req.body = { barcode: "TS-USB Cable-15.99$" };
+      req.body = { barcode: "$15.99-USB Cable-TS" };
       expect(req.body.barcode).toBeTruthy();
       expect(req.body.barcode.length).toBeLessThanOrEqual(32);
     });
@@ -204,7 +204,7 @@ describe("Barcode CRUD Controller Tests", () => {
           vendorPrefix: "TS",
         },
         barcode: {
-          text: "TS-USB Cable-15.99$",
+          text: "$15.99-USB Cable-TS",
           parsed: {
             vendorPrefix: "TS",
             productName: "USB Cable",
@@ -366,7 +366,7 @@ describe("Barcode CRUD Controller Tests", () => {
   describe("Integration Test Structure", () => {
     it("should have proper test data for integration", () => {
       const testData = {
-        validBarcode: "TS-USB Cable-15.99$",
+        validBarcode: "$15.99-USB Cable-TS",
         invalidBarcode: "INVALID-FORMAT",
         productId: "507f1f77bcf86cd799439011", // Valid MongoDB ObjectId format
         vendorId: "507f1f77bcf86cd799439012",

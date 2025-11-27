@@ -19,7 +19,7 @@ describe("Barcode Controller Utils Integration", () => {
 
       // Validate the generated barcode
       expect(validateBarcodeFormat(barcode)).toBe(true);
-      expect(barcode).toBe("TS-USB Cable-15.99$");
+      expect(barcode).toBe("$15.99-USB Cable-TS");
       expect(barcode.length).toBeLessThanOrEqual(32);
 
       // Parse the barcode back
@@ -74,17 +74,17 @@ describe("Barcode Controller Utils Integration", () => {
 
     it("should validate different barcode formats correctly", () => {
       const validBarcodes = [
-        "VD01-USB-3.00$",
-        "TECH-Product Name-99.99$",
-        "A1-X-0.01$",
+        "$3.00-USB-VD01",
+        "$99.99-Product Name-TECH",
+        "$0.01-X-A1",
       ];
 
       const invalidBarcodes = [
-        "VD01-USB-3.00", // Missing $
-        "VD01-USB-3$", // Invalid price format
-        "VD01-3.00$", // Missing product name
-        "VD01USB3.00$", // Missing separators
-        "VD01-Very Long Product Name That Exceeds Thirty Two Characters-99.99$", // Too long
+        "3.00-USB-VD01", // Missing $
+        "$3-USB-VD01", // Invalid price format
+        "$3.00-VD01", // Missing product name
+        "$3.00USBVD01", // Missing separators
+        "$99.99-Very Long Product Name That Exceeds Thirty Two Characters-VD01", // Too long
       ];
 
       validBarcodes.forEach((barcode) => {
@@ -214,7 +214,7 @@ describe("Barcode Controller Utils Integration", () => {
       expect(() => parseBarcode("invalid-format")).toThrow(
         "Invalid barcode format"
       );
-      expect(() => parseBarcode("VD01-Product-invalid$")).toThrow(
+      expect(() => parseBarcode("invalid-Product-VD01")).toThrow(
         "Invalid barcode format"
       );
       expect(() => parseBarcode("")).toThrow("Invalid barcode format");
