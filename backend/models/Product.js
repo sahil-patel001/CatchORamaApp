@@ -148,12 +148,12 @@ const productSchema = new mongoose.Schema(
         validate: {
           validator: function (value) {
             if (!value) return true; // Optional field
-            // Validate barcode format: {VendorPrefix}-{ProductName}-{Price}$
-            const barcodeRegex = /^[A-Za-z0-9]+-[A-Za-z0-9]+-\d+\.\d{2}\$$/;
+            // Validate barcode format: ${Price}-{ProductName}-{VendorPrefix}
+            const barcodeRegex = /^\$\d+\.\d{2}-[A-Za-z0-9]+-[A-Za-z0-9]+$/;
             return barcodeRegex.test(value);
           },
           message:
-            "Barcode text must follow format: {VendorPrefix}-{ProductName}-{Price}$",
+            "Barcode text must follow format: ${Price}-{ProductName}-{VendorPrefix}",
         },
       },
       hasBarcode: {

@@ -102,7 +102,7 @@ describe("Barcode Image Utils", () => {
       };
 
       const result = generateProductBarcodeImage(
-        "TS-USB Cable-15.99$",
+        "$15.99-USB Cable-TS",
         productInfo
       );
 
@@ -160,14 +160,14 @@ describe("Barcode Image Utils", () => {
     it("should generate multiple barcode images", () => {
       const barcodeData = [
         {
-          barcodeText: "TS-USB-15.99$",
+          barcodeText: "$15.99-USB-TS",
           productInfo: {
             productName: "USB Cable",
             vendorName: "Tech Solutions",
           },
         },
         {
-          barcodeText: "VD-Mouse-29.99$",
+          barcodeText: "$29.99-Mouse-VD",
           productInfo: {
             productName: "Wireless Mouse",
             vendorName: "Vendor Direct",
@@ -178,9 +178,9 @@ describe("Barcode Image Utils", () => {
       const results = generateMultipleBarcodeImages(barcodeData);
 
       expect(results).toHaveLength(2);
-      expect(results[0].barcodeText).toBe("TS-USB-15.99$");
+      expect(results[0].barcodeText).toBe("$15.99-USB-TS");
       expect(results[0].imageBuffer).toBeInstanceOf(Buffer);
-      expect(results[1].barcodeText).toBe("VD-Mouse-29.99$");
+      expect(results[1].barcodeText).toBe("$29.99-Mouse-VD");
       expect(results[1].imageBuffer).toBeInstanceOf(Buffer);
     });
 

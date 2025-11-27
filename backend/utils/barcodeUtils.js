@@ -2,18 +2,18 @@
  * Barcode Generation Utilities
  *
  * This module provides utility functions for generating barcodes in the format:
- * {VendorPrefix}-{ProductName}-{Price}$
+ * ${Price}-{ProductName}-{VendorPrefix}
  *
  * Requirements:
  * - Maximum 32 characters total
  * - Truncate product name from the end if needed
- * - Price formatted to 2 decimal places with $ symbol
+ * - Price formatted to 2 decimal places with $ symbol at the beginning
  */
 
 /**
  * Formats a price to 2 decimal places with $ symbol
  * @param {number} price - The price to format
- * @returns {string} Formatted price (e.g., "3.00$")
+ * @returns {string} Formatted price (e.g., "$3.00")
  */
 export const formatPrice = (price) => {
   if (typeof price !== "number" || isNaN(price)) {
@@ -24,7 +24,7 @@ export const formatPrice = (price) => {
     throw new Error("Price cannot be negative");
   }
 
-  return `${price.toFixed(2)}$`;
+  return `$${price.toFixed(2)}`;
 };
 
 /**
@@ -50,7 +50,7 @@ export const truncateProductName = (productName, maxLength) => {
 };
 
 /**
- * Generates a barcode string in the format: {VendorPrefix}-{ProductName}-{Price}$
+ * Generates a barcode string in the format: ${Price}-{ProductName}-{VendorPrefix}
  * Maximum length: 32 characters
  * @param {string} vendorPrefix - The vendor's prefix (e.g., "VD01")
  * @param {string} productName - The product name
@@ -81,7 +81,7 @@ export const generateBarcode = (vendorPrefix, productName, price) => {
   const formattedPrice = formatPrice(price);
 
   // Calculate available space for product name
-  // Format: {vendorPrefix}-{productName}-{price}$
+  // Format: ${price}-{productName}-{vendorPrefix}
   const separators = 2; // Two dashes
   const fixedLength =
     cleanVendorPrefix.length + separators + formattedPrice.length;
@@ -127,20 +127,20 @@ export const validateBarcodeFormat = (barcode) => {
     return false;
   }
 
-  // Check format: should have at least 2 dashes and end with $
+  // Check format: should have at least 2 dashes and start with $
   const parts = barcode.split("-");
   if (parts.length < 3) {
     return false;
   }
 
-  // Check if ends with $ and contains a valid price format
-  const pricePart = parts[parts.length - 1];
-  if (!pricePart.endsWith("$")) {
+  // Check if starts with $ and contains a valid price format
+  const pricePart = parts[0];
+  if (!pricePart.startsWith("$")) {
     return false;
   }
 
   // Extract price and validate format
-  const priceString = pricePart.slice(0, -1);
+  const priceString = pricePart.slice(1);
   const priceRegex = /^\d+\.\d{2}$/;
 
   return priceRegex.test(priceString);
@@ -157,14 +157,14 @@ export const parseBarcode = (barcode) => {
   }
 
   const parts = barcode.split("-");
-  const vendorPrefix = parts[0];
-  const pricePart = parts[parts.length - 1];
+  const pricePart = parts[0];
+  const vendorPrefix = parts[parts.length - 1];
 
   // Extract price (remove $ symbol)
-  const priceString = pricePart.slice(0, -1);
+  const priceString = pricePart.slice(1);
   const price = parseFloat(priceString);
 
-  // Extract product name (everything between vendor prefix and price)
+  // Extract product name (everything between price and vendor prefix)
   const productNameParts = parts.slice(1, -1);
   const productName = productNameParts.join("-");
 
@@ -292,7 +292,7 @@ export const generateUniqueBarcode = async (
       productName,
       availableForProductName
     );
-    const candidateBarcode = `${cleanVendorPrefix}-${truncatedName}-${formattedPrice}`;
+    const candidateBarcode = `${formattedPrice}-${truncatedName}-${cleanVendorPrefix}`;
 
     const isUnique = await isBarcodeUnique(
       candidateBarcode,
@@ -311,7 +311,7 @@ export const generateUniqueBarcode = async (
 
     if (maxProductNameLength <= 0) {
       // If we can't fit product name + suffix, just use suffix
-      const candidateBarcode = `${cleanVendorPrefix}-${suffixStr}-${formattedPrice}`;
+      const candidateBarcode = `${formattedPrice}-${suffixStr}-${cleanVendorPrefix}`;
       const isUnique = await isBarcodeUnique(
         candidateBarcode,
         Product,
@@ -325,7 +325,7 @@ export const generateUniqueBarcode = async (
         productName,
         maxProductNameLength
       );
-      const candidateBarcode = `${cleanVendorPrefix}-${truncatedName}${suffixStr}-${formattedPrice}`;
+      const candidateBarcode = `${formattedPrice}-${truncatedName}${suffixStr}-${cleanVendorPrefix}`;
 
       const isUnique = await isBarcodeUnique(
         candidateBarcode,
