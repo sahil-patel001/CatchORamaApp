@@ -614,6 +614,10 @@ export const productQuerySchema = z.object({
       .string()
       .optional()
       .transform((val) => val === "true"),
+    status: z
+      .enum(["all", "active", "inactive", "draft", "out_of_stock"])
+      .optional(),
+    vendorId: z.string().optional(),
   }),
 });
 

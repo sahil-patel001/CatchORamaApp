@@ -359,4 +359,207 @@ describe('Product Model - Archive Methods', () => {
       expect(allProducts).toHaveLength(2);
     });
   });
+
+  describe('search method with partial prefixes', () => {
+    let vendor;
+
+    beforeEach(async () => {
+      vendor = new Vendor({
+        businessName: 'Test Vendor',
+        email: 'test@vendor.com',
+        phone: '1234567890',
+        address: {
+          street: '123 Test St',
+          city: 'Test City',
+          state: 'Test State',
+          zipCode: '12345',
+          country: 'Test Country',
+        },
+      });
+      await vendor.save();
+
+      // Create products with specific names for prefix testing
+      const products = [
+        {
+          name: 'Frozen Apples',
+          description: 'Fresh frozen apples',
+          category: 'Fruits',
+        },
+        {
+          name: 'Olive Oil',
+          description: 'Extra virgin olive oil',
+          category: 'Cooking',
+        },
+        {
+          name: 'Orange Juice',
+          description: 'Fresh squeezed orange juice',
+          category: 'Beverages',
+        },
+        {
+          name: 'Chocolate Bar',
+          description: 'Dark chocolate bar',
+          category: 'Snacks',
+        },
+      ];
+
+      for (const productData of products) {
+        const product = new Product({
+          vendorId: vendor._id,
+          ...productData,
+          price: 10,
+          stock: 100,
+          status: 'active',
+        });
+        await product.save();
+      }
+    });
+
+    it('should find products matching partial prefix "fro"', async () => {
+      const results = await Product.search('fro');
+      
+      expect(results.length).toBeGreaterThan(0);
+      const names = results.map(p => p.name);
+      expect(names).toContain('Frozen Apples');
+    });
+
+    it('should find products matching partial prefix "oli"', async () => {
+      const results = await Product.search('oli');
+      
+      expect(results.length).toBeGreaterThan(0);
+      const names = results.map(p => p.name);
+      expect(names).toContain('Olive Oil');
+    });
+
+    it('should find products matching partial prefix "ora"', async () => {
+      const results = await Product.search('ora');
+      
+      expect(results.length).toBeGreaterThan(0);
+      const names = results.map(p => p.name);
+      expect(names).toContain('Orange Juice');
+    });
+
+    it('should find products matching partial prefix "choc"', async () => {
+      const results = await Product.search('choc');
+      
+      expect(results.length).toBeGreaterThan(0);
+      const names = results.map(p => p.name);
+      expect(names).toContain('Chocolate Bar');
+    });
+
+    it('should be case insensitive for partial prefixes', async () => {
+      const lowerResults = await Product.search('fro');
+      const upperResults = await Product.search('FRO');
+      const mixedResults = await Product.search('Fro');
+      
+      expect(lowerResults.length).toBe(upperResults.length);
+      expect(lowerResults.length).toBe(mixedResults.length);
+      
+      const lowerNames = lowerResults.map(p => p.name).sort();
+      const upperNames = upperResults.map(p => p.name).sort();
+      expect(lowerNames).toEqual(upperNames);
+    });
+
+    it('should search in description for partial matches', async () => {
+      const results = await Product.search('virgin');
+      
+      expect(results.length).toBeGreaterThan(0);
+      const names = results.map(p => p.name);
+      expect(names).toContain('Olive Oil');
+    });
+
+    it('should search in category for partial matches', async () => {
+      const results = await Product.search('Fruit');
+      
+      expect(results.length).toBeGreaterThan(0);
+      const names = results.map(p => p.name);
+      expect(names).toContain('Frozen Apples');
+    });
+
+    it('should handle multi-word search queries', async () => {
+      // Multi-word queries should still work (though may use text search)
+      const results = await Product.search('Frozen Apples');
+      
+      // Should find at least the Frozen Apples product
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it('should return empty array for empty search term', async () => {
+      const results = await Product.search('');
+      
+      expect(results).toHaveLength(0);
+    });
+
+    it('should return empty array for whitespace-only search term', async () => {
+      const results = await Product.search('   ');
+      
+      expect(results).toHaveLength(0);
+    });
+
+    it('should exclude archived products by default in prefix search', async () => {
+      // Archive one product
+      const frozenProduct = await Product.findOne({ name: 'Frozen Apples' });
+      await frozenProduct.archive();
+
+      const results = await Product.search('fro');
+      
+      const names = results.map(p => p.name);
+      expect(names).not.toContain('Frozen Apples');
+    });
+
+    it('should include archived products when includeArchived option is true', async () => {
+      // Archive one product
+      const frozenProduct = await Product.findOne({ name: 'Frozen Apples' });
+      await frozenProduct.archive();
+
+      const results = await Product.search('fro', { includeArchived: true });
+      
+      const names = results.map(p => p.name);
+      expect(names).toContain('Frozen Apples');
+    });
+
+    it('should filter by category when option is provided', async () => {
+      const results = await Product.search('o', { category: 'Cooking' });
+      
+      expect(results.length).toBeGreaterThan(0);
+      const names = results.map(p => p.name);
+      expect(names).toContain('Olive Oil');
+      expect(names).not.toContain('Orange Juice'); // Different category
+    });
+
+    it('should filter by vendorId when option is provided', async () => {
+      // Create another vendor
+      const vendor2 = new Vendor({
+        businessName: 'Another Vendor',
+        email: 'another@vendor.com',
+        phone: '9876543210',
+        address: {
+          street: '456 Test St',
+          city: 'Test City',
+          state: 'Test State',
+          zipCode: '54321',
+          country: 'Test Country',
+        },
+      });
+      await vendor2.save();
+
+      // Create product for vendor2
+      const product2 = new Product({
+        vendorId: vendor2._id,
+        name: 'Frozen Pizza',
+        description: 'Delicious frozen pizza',
+        price: 15,
+        stock: 50,
+        category: 'Food',
+        status: 'active',
+      });
+      await product2.save();
+
+      // Search with vendor filter
+      const results = await Product.search('fro', { vendorId: vendor._id });
+      
+      const names = results.map(p => p.name);
+      expect(names).toContain('Frozen Apples');
+      expect(names).not.toContain('Frozen Pizza'); // Different vendor
+    });
+  });
 });

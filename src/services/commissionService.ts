@@ -15,6 +15,7 @@ export interface CommissionFilters extends PaginationParams {
   endDate?: string;
   sortBy?: string;
   sortOrder?: "asc" | "desc";
+  search?: string;
 }
 
 export interface PaginatedResponse<T> {

@@ -4,6 +4,7 @@ import { DataTable } from "@/components/DataTable";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { ViewProductModal } from "@/components/modals/ViewProductModal";
 import { useToast } from "@/hooks/use-toast";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import * as productService from "@/services/productService";
@@ -19,17 +20,28 @@ export function ProductArchiveManager() {
   const [unarchiveDialogOpen, setUnarchiveDialogOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 400);
 
   const {
     data: archivedProductsData,
     isLoading,
+    isFetching,
     isError,
     error,
   } = useQuery({
-    queryKey: ["archived-products"],
-    queryFn: () => productService.getArchivedProducts(),
+    queryKey: ["archived-products", page, limit, debouncedSearch],
+    queryFn: () => productService.getArchivedProducts({ 
+      page, 
+      limit, 
+      search: debouncedSearch || undefined 
+    }),
+    keepPreviousData: true,
   });
-  const archivedProducts = archivedProductsData?.data?.products || [];
+  const archivedProducts = archivedProductsData?.products || [];
+  const pagination = archivedProductsData?.pagination;
 
   const unarchiveMutation = useMutation({
     mutationFn: productService.unarchiveProduct,
@@ -209,6 +221,22 @@ export function ProductArchiveManager() {
         hideAddButton={true}
         hideEditButton={true}
         hideDeleteButton={true}
+        manualPagination={true}
+        pageCount={pagination?.pages}
+        currentPage={(pagination?.page || 1) - 1}
+        pageSize={limit}
+        totalItems={pagination?.total}
+        onPageChange={(newPage) => setPage(newPage + 1)}
+        onPageSizeChange={(newLimit) => {
+          setLimit(newLimit);
+          setPage(1);
+        }}
+        isLoading={isLoading || isFetching}
+        searchValue={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
       />
 
       {selectedProduct && (

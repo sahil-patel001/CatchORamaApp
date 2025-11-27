@@ -5,6 +5,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { AddCategoryModal } from "@/components/modals/AddCategoryModal";
 import { EditCategoryModal } from "@/components/modals/EditCategoryModal";
 import { useToast } from "@/hooks/use-toast";
+import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import * as categoryService from "@/services/categoryService";
 import { Category } from "@/types";
 import { formatDate } from "@/lib/utils";
@@ -33,6 +34,8 @@ export function CategoryManagement() {
   );
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState(10);
+  const [search, setSearch] = useState("");
+  const debouncedSearch = useDebouncedValue(search, 400);
 
   const {
     data: categoriesData,
@@ -41,8 +44,9 @@ export function CategoryManagement() {
     isError,
     error,
   } = useQuery<CategoriesResponse>({
-    queryKey: ["categories", page, limit],
-    queryFn: () => categoryService.getCategories(undefined, page, limit),
+    queryKey: ["categories", page, limit, debouncedSearch],
+    queryFn: () => categoryService.getCategories(undefined, page, limit, debouncedSearch || undefined),
+    keepPreviousData: true,
   });
 
   const categories = categoriesData?.categories || [];
@@ -236,6 +240,11 @@ export function CategoryManagement() {
           setPage(1);
         }}
         isLoading={isLoading || isFetching}
+        searchValue={search}
+        onSearchChange={(value) => {
+          setSearch(value);
+          setPage(1);
+        }}
       />
 
       <AddCategoryModal

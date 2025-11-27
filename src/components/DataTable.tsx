@@ -34,6 +34,8 @@ import {
 import {
   ChevronLeft,
   ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
   Eye,
   Edit,
   Trash,
@@ -107,6 +109,9 @@ interface DataTableProps<T> {
   onPageSizeChange?: (pageSize: number) => void;
   // Loading state for inline table loading
   isLoading?: boolean;
+  // Controlled search props for API-based search
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
 }
 
 export const DataTable = React.memo(
@@ -136,6 +141,8 @@ export const DataTable = React.memo(
     onPageChange,
     onPageSizeChange,
     isLoading = false,
+    searchValue,
+    onSearchChange,
   }: DataTableProps<T>) => {
     const [sorting, setSorting] = useState<SortingState>([]);
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -409,7 +416,8 @@ export const DataTable = React.memo(
       getCoreRowModel: getCoreRowModel(),
       getPaginationRowModel: manualPagination ? undefined : getPaginationRowModel(),
       getSortedRowModel: getSortedRowModel(),
-      getFilteredRowModel: getFilteredRowModel(),
+      // Disable client-side filtering when using API-based search
+      getFilteredRowModel: onSearchChange ? undefined : getFilteredRowModel(),
       onColumnVisibilityChange: setColumnVisibility,
       onRowSelectionChange: setRowSelection,
       enableRowSelection: enableSelection,
@@ -419,7 +427,8 @@ export const DataTable = React.memo(
         columnFilters,
         columnVisibility,
         rowSelection,
-        globalFilter,
+        // Don't apply globalFilter state when using API search to prevent client-side filtering
+        globalFilter: onSearchChange ? "" : globalFilter,
         ...(manualPagination && {
           pagination: {
             pageIndex: currentPage,
@@ -469,7 +478,13 @@ export const DataTable = React.memo(
 
     // Handle search filtering
     const handleSearch = (value: string) => {
-      setGlobalFilter(value);
+      // If controlled search is provided, use API-based search only
+      if (onSearchChange) {
+        onSearchChange(value);
+      } else {
+        // Otherwise, use client-side filtering
+        setGlobalFilter(value);
+      }
     };
 
     return (
@@ -481,7 +496,7 @@ export const DataTable = React.memo(
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
               <Input
                 placeholder={searchPlaceholder}
-                value={globalFilter ?? ""}
+                value={searchValue !== undefined ? searchValue : (globalFilter ?? "")}
                 onChange={(event) => handleSearch(event.target.value)}
                 className="pl-10"
               />
@@ -617,6 +632,31 @@ export const DataTable = React.memo(
                 size="icon"
                 onClick={() => {
                   if (manualPagination && onPageChange) {
+                    onPageChange(0);
+                  } else {
+                    table.setPageIndex(0);
+                  }
+                }}
+                disabled={
+                  isLoading ||
+                  (manualPagination
+                    ? currentPage === 0
+                    : table.getState().pagination.pageIndex === 0)
+                }
+                className="h-8 w-8"
+                aria-label="Go to first page"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ChevronsLeft className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  if (manualPagination && onPageChange) {
                     onPageChange(currentPage - 1);
                   } else {
                     table.previousPage();
@@ -629,6 +669,7 @@ export const DataTable = React.memo(
                     : !table.getCanPreviousPage())
                 }
                 className="h-8 w-8"
+                aria-label="Go to previous page"
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -653,11 +694,40 @@ export const DataTable = React.memo(
                     : !table.getCanNextPage())
                 }
                 className="h-8 w-8"
+                aria-label="Go to next page"
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
                 ) : (
                   <ChevronRight className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={() => {
+                  const lastPageIndex = manualPagination
+                    ? (pageCount || 1) - 1
+                    : Math.max(table.getPageCount() - 1, 0);
+                  if (manualPagination && onPageChange) {
+                    onPageChange(lastPageIndex);
+                  } else {
+                    table.setPageIndex(lastPageIndex);
+                  }
+                }}
+                disabled={
+                  isLoading ||
+                  (manualPagination
+                    ? currentPage >= (pageCount || 1) - 1
+                    : table.getState().pagination.pageIndex >= Math.max(table.getPageCount() - 1, 0))
+                }
+                className="h-8 w-8"
+                aria-label="Go to last page"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <ChevronsRight className="h-4 w-4" />
                 )}
               </Button>
             </div>
