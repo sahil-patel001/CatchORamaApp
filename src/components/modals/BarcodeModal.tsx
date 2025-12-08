@@ -236,7 +236,7 @@ export function BarcodeModal({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex-1 overflow-hidden">
+        <div className="flex-1 position-relative overflow-hidden ">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
             {/* Product List */}
             <div className="lg:col-span-2 flex flex-col">
@@ -248,7 +248,7 @@ export function BarcodeModal({
                 </Badge>
               </div>
 
-              <ScrollArea className="flex-1 pr-4">
+              <ScrollArea className="flex-1 pr-4 overflow-auto max-h-[99vh]">
                 <div className="space-y-4">
                   {barcodeProducts.map((item) => {
                     const productId = item.product._id || item.product.id;
