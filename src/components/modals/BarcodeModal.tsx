@@ -248,7 +248,7 @@ export function BarcodeModal({
                 </Badge>
               </div>
 
-              <ScrollArea className="flex-1 pr-4 overflow-auto max-h-[99vh]">
+              <ScrollArea className="flex-1 pr-4 overflow-auto max-h-[80vh]">
                 <div className="space-y-4">
                   {barcodeProducts.map((item) => {
                     const productId = item.product._id || item.product.id;
