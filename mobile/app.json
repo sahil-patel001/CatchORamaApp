@@ -17,14 +17,23 @@
     ],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.catchorama.admin"
+      "bundleIdentifier": "com.catchorama.admin",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Allow CatchORama to access your camera to take product photos.",
+        "NSPhotoLibraryUsageDescription": "Allow CatchORama to access your photos to select product images."
+      }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#4F46E5"
       },
-      "package": "com.catchorama.admin"
+      "package": "com.catchorama.admin",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE"
+      ]
     },
     "web": {
       "bundler": "metro",
@@ -35,15 +44,10 @@
       "expo-router",
       "expo-secure-store",
       [
-        "expo-camera",
-        {
-          "cameraPermission": "Allow CatchORama to access your camera to take product photos."
-        }
-      ],
-      [
         "expo-image-picker",
         {
-          "photosPermission": "Allow CatchORama to access your photos to select product images."
+          "photosPermission": "Allow CatchORama to access your photos to select product images.",
+          "cameraPermission": "Allow CatchORama to access your camera to take product photos."
         }
       ]
     ],
