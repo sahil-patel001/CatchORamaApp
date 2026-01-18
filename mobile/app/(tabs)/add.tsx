@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -16,12 +16,13 @@ import {
   FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
+import { useProducts } from '../../context/ProductsContext';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { createProduct, getCategories } from '../../services/products';
 import { ProductFormData } from '../../types';
@@ -75,8 +76,10 @@ const buildProductSchema = (requireVendorId: boolean) =>
 
 export default function AddProductScreen() {
   const { user } = useAuth();
+  const { markProductsChanged } = useProducts();
   const { checkConnection } = useNetworkStatus();
   const router = useRouter();
+  const scrollViewRef = useRef<ScrollView | null>(null);
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
@@ -85,6 +88,7 @@ export default function AddProductScreen() {
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
 
   const isSuperAdmin = user?.role === 'superadmin';
+  const isVendor = user?.role === 'vendor';
 
   const {
     control,
@@ -113,9 +117,25 @@ export default function AddProductScreen() {
 
   const selectedCategory = watch('category');
 
+  // Tabs keep screens mounted, so we manually reset scroll on focus.
+  useFocusEffect(
+    useCallback(() => {
+      requestAnimationFrame(() => {
+        scrollViewRef.current?.scrollTo({ y: 0, animated: false });
+      });
+    }, [])
+  );
+
   useEffect(() => {
     loadCategories();
   }, []);
+
+  // Auto-fill vendorId for vendor accounts so we don't submit an empty vendorId.
+  useEffect(() => {
+    if (isVendor && user?.vendorId) {
+      setValue('vendorId', user.vendorId, { shouldValidate: false, shouldDirty: false });
+    }
+  }, [isVendor, user?.vendorId, setValue]);
 
   const loadCategories = async () => {
     setIsLoadingCategories(true);
@@ -237,6 +257,13 @@ export default function AddProductScreen() {
     setShowCategoryPicker(false);
   };
 
+  const handleCancel = () => {
+    reset();
+    setImageUri(null);
+    setShowCategoryPicker(false);
+    router.replace('/(tabs)');
+  };
+
   const onSubmit = async (data: ProductFormData) => {
     const isConnected = await checkConnection();
     if (!isConnected) return;
@@ -244,7 +271,21 @@ export default function AddProductScreen() {
     setIsSubmitting(true);
 
     try {
-      const response = await createProduct(data, imageUri || undefined);
+      // Backend expects a valid vendorId; vendor users should not submit an empty value.
+      const payload: ProductFormData = { ...data };
+      if (!isSuperAdmin) {
+        const resolvedVendorId = (user?.vendorId || '').trim();
+        if (!resolvedVendorId) {
+          setIsSubmitting(false);
+          Alert.alert('Error', 'Your account is missing a vendorId. Please log out and log back in, or contact support.');
+          return;
+        }
+        payload.vendorId = resolvedVendorId;
+      } else if (typeof payload.vendorId === 'string') {
+        payload.vendorId = payload.vendorId.trim();
+      }
+
+      const response = await createProduct(payload, imageUri || undefined);
       
       if (response.success) {
         Alert.alert(
@@ -256,6 +297,7 @@ export default function AddProductScreen() {
               onPress: () => {
                 reset();
                 setImageUri(null);
+                markProductsChanged();
                 router.push('/(tabs)');
               },
             },
@@ -362,6 +404,7 @@ export default function AddProductScreen() {
         style={styles.keyboardView}
       >
         <ScrollView
+          ref={scrollViewRef}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -454,17 +497,35 @@ export default function AddProductScreen() {
           )}
 
           {/* Submit Button */}
-          <TouchableOpacity
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-            onPress={handleSubmit(onSubmit)}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.submitButtonText}>Create Product</Text>
-            )}
-          </TouchableOpacity>
+          <View style={styles.actionsRow}>
+            <TouchableOpacity
+              style={[
+                styles.cancelButton,
+                styles.actionButton,
+                isSubmitting && styles.buttonDisabled,
+              ]}
+              onPress={handleCancel}
+              disabled={isSubmitting}
+            >
+              <Text style={styles.cancelButtonText}>Cancel</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[
+                styles.submitButton,
+                styles.actionButton,
+                isSubmitting && styles.submitButtonDisabled,
+              ]}
+              onPress={handleSubmit(onSubmit)}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.submitButtonText}>Create Product</Text>
+              )}
+            </TouchableOpacity>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -698,6 +759,17 @@ const styles = StyleSheet.create({
   thirdWidth: {
     flex: 1,
   },
+  actionsRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginTop: 8,
+  },
+  actionButton: {
+    flex: 1,
+  },
+  buttonDisabled: {
+    opacity: 0.7,
+  },
   // Picker styles
   pickerButton: {
     backgroundColor: '#F9FAFB',
@@ -726,7 +798,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 8,
     shadowColor: '#4F46E5',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.2,
@@ -738,6 +809,19 @@ const styles = StyleSheet.create({
   },
   submitButtonText: {
     color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  cancelButton: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  cancelButtonText: {
+    color: '#6B7280',
     fontSize: 16,
     fontWeight: '600',
   },

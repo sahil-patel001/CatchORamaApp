@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -13,16 +13,22 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { useAuth } from '../../context/AuthContext';
+import { useProducts } from '../../context/ProductsContext';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getProducts } from '../../services/products';
 import { Product } from '../../types';
 
-const ITEMS_PER_PAGE = 10;
+const ITEMS_PER_PAGE = 20;
 
 export default function ProductListScreen() {
   const { user, logout } = useAuth();
+  const { productsChangeCounter } = useProducts();
   const { checkConnection } = useNetworkStatus();
   const router = useRouter();
+  const listRef = useRef<FlatList<Product> | null>(null);
+  const vendorHasFetchedOnceRef = useRef(false);
+  const vendorLastSeenChangeCounterRef = useRef(0);
+  const isLoadingMoreRef = useRef(false);
 
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -36,6 +42,8 @@ export default function ProductListScreen() {
     if (!isConnected) {
       setIsLoading(false);
       setIsRefreshing(false);
+      setIsLoadingMore(false);
+      isLoadingMoreRef.current = false;
       return;
     }
 
@@ -44,16 +52,43 @@ export default function ProductListScreen() {
       
       if (response.success) {
         const newProducts = response.data.products;
-        const pagination = response.data.pagination;
+        const pagination = response.data.pagination as
+          | { page?: number; limit?: number; total?: number; pages?: number }
+          | undefined;
+        const effectivePage = pagination?.page ?? pageNum;
+        const effectiveLimit = pagination?.limit ?? ITEMS_PER_PAGE;
+        const totalPages =
+          pagination?.pages ??
+          (typeof pagination?.total === 'number' && effectiveLimit > 0
+            ? Math.ceil(pagination.total / effectiveLimit)
+            : undefined);
         
         if (refresh || pageNum === 1) {
           setProducts(newProducts);
         } else {
-          setProducts(prev => [...prev, ...newProducts]);
+          // Dedupe by _id to protect against repeated `onEndReached` calls.
+          setProducts((prev) => {
+            const merged = [...prev, ...newProducts];
+            const seen = new Set<string>();
+            const deduped: Product[] = [];
+            for (const p of merged) {
+              if (!p?._id) continue;
+              if (seen.has(p._id)) continue;
+              seen.add(p._id);
+              deduped.push(p);
+            }
+            return deduped;
+          });
         }
         
-        setHasMore(pageNum < pagination.pages);
-        setPage(pageNum);
+        if (typeof totalPages === 'number' && totalPages > 0) {
+          setHasMore(effectivePage < totalPages);
+        } else {
+          // Last resort: if we received a full page, assume more pages exist.
+          setHasMore(newProducts.length === effectiveLimit);
+        }
+
+        setPage(effectivePage);
       }
     } catch (error: any) {
       console.error('Error fetching products:', error);
@@ -65,15 +100,40 @@ export default function ProductListScreen() {
       setIsLoading(false);
       setIsRefreshing(false);
       setIsLoadingMore(false);
+      isLoadingMoreRef.current = false;
     }
   }, [checkConnection]);
 
   // Fetch products when screen comes into focus
   useFocusEffect(
     useCallback(() => {
-      setIsLoading(true);
-      fetchProducts(1, true);
-    }, [fetchProducts])
+      // Tabs keep screens mounted, so we manually reset scroll on focus.
+      requestAnimationFrame(() => {
+        listRef.current?.scrollToOffset({ offset: 0, animated: false });
+      });
+
+      const isSuperAdmin = user?.role === 'superadmin';
+      if (isSuperAdmin) {
+        setIsLoading(true);
+        fetchProducts(1, true);
+        return;
+      }
+
+      // Vendor: fetch only on first load, or after add/edit marked products as changed.
+      const shouldFetchForVendor =
+        !vendorHasFetchedOnceRef.current ||
+        vendorLastSeenChangeCounterRef.current !== productsChangeCounter;
+
+      if (shouldFetchForVendor) {
+        setIsLoading(true);
+        fetchProducts(1, true);
+        vendorHasFetchedOnceRef.current = true;
+        vendorLastSeenChangeCounterRef.current = productsChangeCounter;
+      } else {
+        // Even if we don't refetch, make sure loaders aren't stuck.
+        setIsLoading(false);
+      }
+    }, [fetchProducts, productsChangeCounter, user?.role])
   );
 
   const handleRefresh = useCallback(() => {
@@ -82,11 +142,13 @@ export default function ProductListScreen() {
   }, [fetchProducts]);
 
   const handleLoadMore = useCallback(() => {
-    if (!isLoadingMore && hasMore && !isLoading) {
-      setIsLoadingMore(true);
-      fetchProducts(page + 1);
-    }
-  }, [isLoadingMore, hasMore, isLoading, page, fetchProducts]);
+    if (isLoadingMoreRef.current) return;
+    if (!hasMore || isLoading) return;
+
+    isLoadingMoreRef.current = true;
+    setIsLoadingMore(true);
+    fetchProducts(page + 1);
+  }, [hasMore, isLoading, page, fetchProducts]);
 
   const handleProductPress = (product: Product) => {
     router.push(`/product/${product._id}`);
@@ -215,6 +277,7 @@ export default function ProductListScreen() {
         </View>
       ) : (
         <FlatList
+          ref={listRef}
           data={products}
           renderItem={renderProduct}
           keyExtractor={(item) => item._id}

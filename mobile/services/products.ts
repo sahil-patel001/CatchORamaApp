@@ -1,5 +1,6 @@
 import api from './api';
 import { Product, ProductListResponse, ProductResponse, ProductFormData } from '../types';
+import { resolveImageUrl } from './images';
 
 const isHttpUrl = (value: string) => /^https?:\/\//i.test(value);
 
@@ -44,6 +45,66 @@ const appendIfDefined = (formData: FormData, key: string, value: unknown) => {
   formData.append(key, String(value));
 };
 
+const normalizeProductImages = (product: any): any => {
+  if (!product || typeof product !== 'object') return product;
+
+  // If backend returns `image` instead of `images`, normalize it.
+  if (!Array.isArray(product.images) && typeof product.image === 'string') {
+    const resolved = resolveImageUrl(product.image) ?? product.image;
+    product.images = [{ url: resolved, isPrimary: true }];
+    return product;
+  }
+
+  if (!Array.isArray(product.images)) return product;
+
+  product.images = product.images
+    .map((img: any, idx: number) => {
+      if (typeof img === 'string') {
+        const resolved = resolveImageUrl(img) ?? img;
+        return { url: resolved, isPrimary: idx === 0 };
+      }
+
+      if (!img || typeof img !== 'object') return img;
+
+      const rawUrl =
+        (typeof img.url === 'string' && img.url) ||
+        (typeof img.path === 'string' && img.path) ||
+        (typeof img.uri === 'string' && img.uri) ||
+        '';
+
+      const resolved = resolveImageUrl(rawUrl) ?? rawUrl;
+      return { ...img, url: resolved };
+    })
+    .filter(Boolean);
+
+  return product;
+};
+
+const normalizeProductResponse = <T extends { data?: any }>(payload: T): T => {
+  // Clone the response payload (and `payload.data`) before normalizing so callers
+  // don’t observe mutations from this function.
+  if (!payload || typeof payload !== 'object') return payload;
+
+  const cloned: any = { ...(payload as any) };
+  if (cloned.data && typeof cloned.data === 'object' && !Array.isArray(cloned.data)) {
+    cloned.data = { ...cloned.data };
+  }
+
+  // list response: { data: { products: [...] } }
+  if (cloned.data?.products && Array.isArray(cloned.data.products)) {
+    cloned.data.products = cloned.data.products.map((p: any) =>
+      normalizeProductImages(p && typeof p === 'object' ? { ...p } : p)
+    );
+  }
+
+  // single response: { data: { product: {...} } }
+  if (cloned.data?.product && typeof cloned.data.product === 'object') {
+    cloned.data.product = normalizeProductImages({ ...cloned.data.product });
+  }
+
+  return cloned;
+};
+
 interface GetProductsParams {
   page?: number;
   limit?: number;
@@ -55,12 +116,12 @@ interface GetProductsParams {
 
 export const getProducts = async (params: GetProductsParams = {}): Promise<ProductListResponse> => {
   const response = await api.get<ProductListResponse>('/products', { params });
-  return response.data;
+  return normalizeProductResponse(response.data);
 };
 
 export const getProduct = async (id: string): Promise<ProductResponse> => {
   const response = await api.get<ProductResponse>(`/products/${id}`);
-  return response.data;
+  return normalizeProductResponse(response.data);
 };
 
 export const createProduct = async (
@@ -82,7 +143,11 @@ export const createProduct = async (
   appendIfDefined(formData, 'breadth', data.breadth);
   appendIfDefined(formData, 'height', data.height);
   appendIfDefined(formData, 'weight', data.weight);
-  appendIfDefined(formData, 'vendorId', data.vendorId);
+  // Avoid sending empty vendorId which backend will reject.
+  if (typeof data.vendorId === 'string') {
+    const trimmed = data.vendorId.trim();
+    if (trimmed.length > 0) formData.append('vendorId', trimmed);
+  }
   appendIfDefined(formData, 'customFields', data.customFields);
   
   // Add image if provided
@@ -108,7 +173,7 @@ export const createProduct = async (
     },
   });
   
-  return response.data;
+  return normalizeProductResponse(response.data);
 };
 
 export const updateProduct = async (
@@ -157,7 +222,7 @@ export const updateProduct = async (
     },
   });
   
-  return response.data;
+  return normalizeProductResponse(response.data);
 };
 
 export const getCategories = async (): Promise<{ categories: string[] }> => {

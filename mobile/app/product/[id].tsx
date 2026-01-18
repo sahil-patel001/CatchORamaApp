@@ -23,6 +23,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
+import { useProducts } from '../../context/ProductsContext';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getCategories, getProduct, updateProduct } from '../../services/products';
 import { ProductFormData, Product } from '../../types';
@@ -74,6 +75,7 @@ const buildProductSchema = (requireVendorId: boolean) =>
 export default function EditProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
+  const { markProductsChanged } = useProducts();
   const { checkConnection } = useNetworkStatus();
   const router = useRouter();
   
@@ -303,7 +305,10 @@ export default function EditProductScreen() {
           [
             {
               text: 'OK',
-              onPress: () => router.back(),
+              onPress: () => {
+                markProductsChanged();
+                router.back();
+              },
             },
           ]
         );
