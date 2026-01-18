@@ -26,28 +26,49 @@ import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { createProduct, getCategories } from '../../services/products';
 import { ProductFormData } from '../../types';
 
-const productSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  price: z.string().refine(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Price must be a positive number'),
-  discountPrice: z.string().optional().refine(val => !val || (!isNaN(parseFloat(val)) && parseFloat(val) > 0), 'Must be a positive number'),
-  stock: z.string().refine(val => !isNaN(parseInt(val)) && parseInt(val) >= 0, 'Stock must be 0 or greater'),
-  category: z.string().min(1, 'Category is required'),
-  description: z.string().optional(),
-  length: z.string().min(1, 'Length is required').refine(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
-  breadth: z.string().min(1, 'Breadth is required').refine(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
-  height: z.string().min(1, 'Height is required').refine(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
-  weight: z.string().min(1, 'Weight is required').refine(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
-  lowStockThreshold: z.string().optional(),
-  vendorId: z.string().optional(),
-}).refine(data => {
-  if (data.discountPrice && data.price) {
-    return parseFloat(data.discountPrice) < parseFloat(data.price);
-  }
-  return true;
-}, {
-  message: 'Discount price must be less than regular price',
-  path: ['discountPrice'],
-});
+const buildProductSchema = (requireVendorId: boolean) =>
+  z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    price: z
+      .string()
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Price must be a positive number'),
+    discountPrice: z
+      .string()
+      .optional()
+      .refine((val) => !val || (!isNaN(parseFloat(val)) && parseFloat(val) > 0), 'Must be a positive number'),
+    stock: z
+      .string()
+      .refine((val) => !isNaN(parseInt(val)) && parseInt(val) >= 0, 'Stock must be 0 or greater'),
+    category: z.string().min(1, 'Category is required'),
+    description: z.string().optional(),
+    length: z
+      .string()
+      .min(1, 'Length is required')
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
+    breadth: z
+      .string()
+      .min(1, 'Breadth is required')
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
+    height: z
+      .string()
+      .min(1, 'Height is required')
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
+    weight: z
+      .string()
+      .min(1, 'Weight is required')
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
+    lowStockThreshold: z.string().optional(),
+    vendorId: requireVendorId ? z.string().min(1, 'Vendor ID is required') : z.string().optional(),
+  })
+    .refine((data) => {
+      if (data.discountPrice && data.price) {
+        return parseFloat(data.discountPrice) < parseFloat(data.price);
+      }
+      return true;
+    }, {
+      message: 'Discount price must be less than regular price',
+      path: ['discountPrice'],
+    });
 
 export default function AddProductScreen() {
   const { user } = useAuth();
@@ -70,7 +91,7 @@ export default function AddProductScreen() {
     reset,
     formState: { errors },
   } = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(buildProductSchema(isSuperAdmin)),
     defaultValues: {
       name: '',
       price: '',
@@ -265,7 +286,11 @@ export default function AddProductScreen() {
     <View style={styles.inputContainer}>
       <Text style={styles.label}>
         {label}
-        {options.required && <Text style={styles.required}> *</Text>}
+        {options.required ? (
+          <Text style={styles.required}> *</Text>
+        ) : (
+          <Text style={styles.optionalTag}> (Optional)</Text>
+        )}
       </Text>
       <Controller
         control={control}
@@ -633,6 +658,10 @@ const styles = StyleSheet.create({
   },
   required: {
     color: '#EF4444',
+  },
+  optionalTag: {
+    color: '#6B7280',
+    fontWeight: '400',
   },
   input: {
     backgroundColor: '#F9FAFB',

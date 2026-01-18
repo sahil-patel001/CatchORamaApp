@@ -1,6 +1,26 @@
 import api from './api';
 import { Product, ProductListResponse, ProductResponse, ProductFormData } from '../types';
-import * as FileSystem from 'expo-file-system';
+
+const isHttpUrl = (value: string) => /^https?:\/\//i.test(value);
+
+const guessImageMimeType = (filename: string): string => {
+  const match = /\.([\w]+)$/.exec(filename.toLowerCase());
+  const ext = match?.[1];
+  if (!ext) return 'image/jpeg';
+  if (ext === 'jpg') return 'image/jpeg';
+  if (ext === 'jpeg') return 'image/jpeg';
+  if (ext === 'png') return 'image/png';
+  if (ext === 'webp') return 'image/webp';
+  if (ext === 'gif') return 'image/gif';
+  if (ext === 'heic') return 'image/heic';
+  if (ext === 'heif') return 'image/heif';
+  return `image/${ext}`;
+};
+
+const appendIfDefined = (formData: FormData, key: string, value: unknown) => {
+  if (value === undefined || value === null) return;
+  formData.append(key, String(value));
+};
 
 interface GetProductsParams {
   page?: number;
@@ -33,26 +53,31 @@ export const createProduct = async (
   formData.append('stock', data.stock);
   formData.append('category', data.category);
   
-  if (data.discountPrice) formData.append('discountPrice', data.discountPrice);
-  if (data.description) formData.append('description', data.description);
-  if (data.length) formData.append('length', data.length);
-  if (data.breadth) formData.append('breadth', data.breadth);
-  if (data.height) formData.append('height', data.height);
-  if (data.weight) formData.append('weight', data.weight);
-  if (data.lowStockThreshold) formData.append('lowStockThreshold', data.lowStockThreshold);
-  if (data.vendorId) formData.append('vendorId', data.vendorId);
+  appendIfDefined(formData, 'discountPrice', data.discountPrice);
+  appendIfDefined(formData, 'description', data.description);
+  appendIfDefined(formData, 'lowStockThreshold', data.lowStockThreshold);
+  appendIfDefined(formData, 'length', data.length);
+  appendIfDefined(formData, 'breadth', data.breadth);
+  appendIfDefined(formData, 'height', data.height);
+  appendIfDefined(formData, 'weight', data.weight);
+  appendIfDefined(formData, 'vendorId', data.vendorId);
+  appendIfDefined(formData, 'customFields', data.customFields);
   
   // Add image if provided
   if (imageUri) {
-    const filename = imageUri.split('/').pop() || 'image.jpg';
-    const match = /\.([\w]+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : 'image/jpeg';
-    
-    formData.append('image', {
-      uri: imageUri,
-      name: filename,
-      type,
-    } as any);
+    if (isHttpUrl(imageUri)) {
+      // Backend supports `image` as URL string too.
+      formData.append('image', imageUri);
+    } else {
+      const filename = imageUri.split('/').pop() || 'image.jpg';
+      const type = guessImageMimeType(filename);
+
+      formData.append('image', {
+        uri: imageUri,
+        name: filename,
+        type,
+      } as any);
+    }
   }
   
   const response = await api.post<ProductResponse>('/products', formData, {
@@ -72,29 +97,36 @@ export const updateProduct = async (
   const formData = new FormData();
   
   // Add all form fields that are provided
-  if (data.name) formData.append('name', data.name);
-  if (data.price) formData.append('price', data.price);
-  if (data.stock) formData.append('stock', data.stock);
-  if (data.category) formData.append('category', data.category);
+  appendIfDefined(formData, 'name', data.name);
+  appendIfDefined(formData, 'price', data.price);
+  appendIfDefined(formData, 'stock', data.stock);
+  appendIfDefined(formData, 'category', data.category);
+
+  // Keep explicit clearing behavior for optional string fields.
   if (data.discountPrice !== undefined) formData.append('discountPrice', data.discountPrice || '');
   if (data.description !== undefined) formData.append('description', data.description || '');
-  if (data.length) formData.append('length', data.length);
-  if (data.breadth) formData.append('breadth', data.breadth);
-  if (data.height) formData.append('height', data.height);
-  if (data.weight) formData.append('weight', data.weight);
-  if (data.lowStockThreshold) formData.append('lowStockThreshold', data.lowStockThreshold);
+  if (data.customFields !== undefined) formData.append('customFields', data.customFields || '');
+
+  appendIfDefined(formData, 'lowStockThreshold', data.lowStockThreshold);
+  appendIfDefined(formData, 'length', data.length);
+  appendIfDefined(formData, 'breadth', data.breadth);
+  appendIfDefined(formData, 'height', data.height);
+  appendIfDefined(formData, 'weight', data.weight);
   
   // Add image if provided
   if (imageUri) {
-    const filename = imageUri.split('/').pop() || 'image.jpg';
-    const match = /\.([\w]+)$/.exec(filename);
-    const type = match ? `image/${match[1]}` : 'image/jpeg';
-    
-    formData.append('image', {
-      uri: imageUri,
-      name: filename,
-      type,
-    } as any);
+    if (isHttpUrl(imageUri)) {
+      formData.append('image', imageUri);
+    } else {
+      const filename = imageUri.split('/').pop() || 'image.jpg';
+      const type = guessImageMimeType(filename);
+
+      formData.append('image', {
+        uri: imageUri,
+        name: filename,
+        type,
+      } as any);
+    }
   }
   
   const response = await api.put<ProductResponse>(`/products/${id}`, formData, {
@@ -107,6 +139,19 @@ export const updateProduct = async (
 };
 
 export const getCategories = async (): Promise<{ categories: string[] }> => {
-  const response = await api.get<{ success: boolean; data: { categories: string[] } }>('/products/categories');
-  return response.data.data;
+  // Backend returns full category objects from `/categories`; map to names for UI dropdown.
+  const response = await api.get<{
+    success: boolean;
+    data: Array<{ _id: string; name: string }>;
+    pagination?: { page: number; limit: number; total: number; pages: number };
+  }>('/categories');
+
+  const names = (response.data.data || [])
+    .map((c) => c?.name)
+    .filter((name): name is string => typeof name === 'string' && name.trim().length > 0);
+
+  // Ensure uniqueness + stable order
+  const categories = Array.from(new Set(names)).sort((a, b) => a.localeCompare(b));
+
+  return { categories };
 };

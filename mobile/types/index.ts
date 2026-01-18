@@ -98,6 +98,11 @@ export interface ProductFormData {
   weight?: string;
   lowStockThreshold?: string;
   vendorId?: string;
+  /**
+   * JSON string for arbitrary custom fields.
+   * Sent as multipart field `customFields` on create/update.
+   */
+  customFields?: string;
 }
 
 export interface LoginFormData {

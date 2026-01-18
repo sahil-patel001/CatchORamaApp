@@ -12,6 +12,8 @@ import {
   Alert,
   Image,
   ActionSheetIOS,
+  Modal,
+  FlatList,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -21,30 +23,52 @@ import { z } from 'zod';
 import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../../context/AuthContext';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
-import { getProduct, updateProduct } from '../../services/products';
+import { getCategories, getProduct, updateProduct } from '../../services/products';
 import { ProductFormData, Product } from '../../types';
 
-const productSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  price: z.string().refine(val => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Price must be a positive number'),
-  discountPrice: z.string().optional().refine(val => !val || (!isNaN(parseFloat(val)) && parseFloat(val) > 0), 'Must be a positive number'),
-  stock: z.string().refine(val => !isNaN(parseInt(val)) && parseInt(val) >= 0, 'Stock must be 0 or greater'),
-  category: z.string().min(2, 'Category is required'),
-  description: z.string().optional(),
-  length: z.string().optional(),
-  breadth: z.string().optional(),
-  height: z.string().optional(),
-  weight: z.string().optional(),
-  lowStockThreshold: z.string().optional(),
-}).refine(data => {
-  if (data.discountPrice && data.price) {
-    return parseFloat(data.discountPrice) < parseFloat(data.price);
-  }
-  return true;
-}, {
-  message: 'Discount price must be less than regular price',
-  path: ['discountPrice'],
-});
+const buildProductSchema = (requireVendorId: boolean) =>
+  z.object({
+    name: z.string().min(2, 'Name must be at least 2 characters'),
+    price: z
+      .string()
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Price must be a positive number'),
+    discountPrice: z
+      .string()
+      .optional()
+      .refine((val) => !val || (!isNaN(parseFloat(val)) && parseFloat(val) > 0), 'Must be a positive number'),
+    stock: z
+      .string()
+      .refine((val) => !isNaN(parseInt(val)) && parseInt(val) >= 0, 'Stock must be 0 or greater'),
+    category: z.string().min(1, 'Category is required'),
+    description: z.string().optional(),
+    length: z
+      .string()
+      .min(1, 'Length is required')
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
+    breadth: z
+      .string()
+      .min(1, 'Breadth is required')
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
+    height: z
+      .string()
+      .min(1, 'Height is required')
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
+    weight: z
+      .string()
+      .min(1, 'Weight is required')
+      .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
+    lowStockThreshold: z.string().optional(),
+    vendorId: requireVendorId ? z.string().min(1, 'Vendor ID is required') : z.string().optional(),
+  })
+    .refine((data) => {
+      if (data.discountPrice && data.price) {
+        return parseFloat(data.discountPrice) < parseFloat(data.price);
+      }
+      return true;
+    }, {
+      message: 'Discount price must be less than regular price',
+      path: ['discountPrice'],
+    });
 
 export default function EditProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -57,15 +81,20 @@ export default function EditProductScreen() {
   const [product, setProduct] = useState<Product | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [hasNewImage, setHasNewImage] = useState(false);
+  const [categories, setCategories] = useState<string[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(true);
+  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const isSuperAdmin = user?.role === 'superadmin';
 
   const {
     control,
     handleSubmit,
     setValue,
+    watch,
     reset,
     formState: { errors, isDirty },
   } = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema),
+    resolver: zodResolver(buildProductSchema(isSuperAdmin)),
     defaultValues: {
       name: '',
       price: '',
@@ -78,6 +107,7 @@ export default function EditProductScreen() {
       height: '',
       weight: '',
       lowStockThreshold: '10',
+      vendorId: '',
     },
   });
 
@@ -86,6 +116,27 @@ export default function EditProductScreen() {
       loadProduct();
     }
   }, [id]);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const selectedCategory = watch('category');
+
+  const loadCategories = async () => {
+    setIsLoadingCategories(true);
+    try {
+      const result = await getCategories();
+      if (result.categories && result.categories.length > 0) {
+        setCategories(result.categories);
+      }
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+      Alert.alert('Error', 'Failed to load categories. Please try again.');
+    } finally {
+      setIsLoadingCategories(false);
+    }
+  };
 
   const loadProduct = async () => {
     const isConnected = await checkConnection();
@@ -114,6 +165,7 @@ export default function EditProductScreen() {
           height: p.height?.toString() || '',
           weight: p.weight?.toString() || '',
           lowStockThreshold: p.inventory?.lowStockThreshold?.toString() || '10',
+          vendorId: p.vendorId || '',
         });
 
         // Set existing image
@@ -282,7 +334,11 @@ export default function EditProductScreen() {
     <View style={styles.inputContainer}>
       <Text style={styles.label}>
         {label}
-        {options.required && <Text style={styles.required}> *</Text>}
+        {options.required ? (
+          <Text style={styles.required}> *</Text>
+        ) : (
+          <Text style={styles.optionalTag}> (Optional)</Text>
+        )}
       </Text>
       <Controller
         control={control}
@@ -307,6 +363,44 @@ export default function EditProductScreen() {
       />
       {errors[name] && (
         <Text style={styles.errorText}>{errors[name]?.message}</Text>
+      )}
+    </View>
+  );
+
+  const handleCategorySelect = (category: string) => {
+    setValue('category', category, { shouldValidate: true });
+    setShowCategoryPicker(false);
+  };
+
+  const renderCategoryPicker = () => (
+    <View style={styles.inputContainer}>
+      <Text style={styles.label}>
+        Category<Text style={styles.required}> *</Text>
+      </Text>
+      <TouchableOpacity
+        style={[
+          styles.pickerButton,
+          errors.category && styles.inputError,
+        ]}
+        onPress={() => setShowCategoryPicker(true)}
+        disabled={isLoadingCategories}
+      >
+        {isLoadingCategories ? (
+          <ActivityIndicator size="small" color="#6B7280" />
+        ) : (
+          <>
+            <Text style={[
+              styles.pickerButtonText,
+              !selectedCategory && styles.pickerPlaceholder
+            ]}>
+              {selectedCategory || 'Select a category'}
+            </Text>
+            <Text style={styles.pickerArrow}>▼</Text>
+          </>
+        )}
+      </TouchableOpacity>
+      {errors.category && (
+        <Text style={styles.errorText}>{errors.category.message}</Text>
       )}
     </View>
   );
@@ -359,7 +453,7 @@ export default function EditProductScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Basic Information</Text>
             {renderInput('name', 'Product Name', { required: true, placeholder: 'Enter product name' })}
-            {renderInput('category', 'Category', { required: true, placeholder: 'e.g., Electronics, Food' })}
+            {renderCategoryPicker()}
             {renderInput('description', 'Description', { multiline: true, placeholder: 'Product description...' })}
           </View>
 
@@ -389,17 +483,25 @@ export default function EditProductScreen() {
             <Text style={styles.sectionTitle}>Dimensions & Weight</Text>
             <View style={styles.row}>
               <View style={styles.thirdWidth}>
-                {renderInput('length', 'L (cm)', { keyboardType: 'decimal-pad' })}
+                {renderInput('length', 'L (cm)', { required: true, keyboardType: 'decimal-pad', placeholder: '0' })}
               </View>
               <View style={styles.thirdWidth}>
-                {renderInput('breadth', 'B (cm)', { keyboardType: 'decimal-pad' })}
+                {renderInput('breadth', 'B (cm)', { required: true, keyboardType: 'decimal-pad', placeholder: '0' })}
               </View>
               <View style={styles.thirdWidth}>
-                {renderInput('height', 'H (cm)', { keyboardType: 'decimal-pad' })}
+                {renderInput('height', 'H (cm)', { required: true, keyboardType: 'decimal-pad', placeholder: '0' })}
               </View>
             </View>
-            {renderInput('weight', 'Weight (kg)', { keyboardType: 'decimal-pad' })}
+            {renderInput('weight', 'Weight (kg)', { required: true, keyboardType: 'decimal-pad', placeholder: '0' })}
           </View>
+
+          {/* Vendor ID - Only for Superadmin */}
+          {isSuperAdmin && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Vendor Assignment</Text>
+              {renderInput('vendorId', 'Vendor ID', { required: true, placeholder: 'Enter vendor ID' })}
+            </View>
+          )}
 
           {/* Submit Button */}
           <TouchableOpacity
@@ -424,6 +526,66 @@ export default function EditProductScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Category Picker Modal */}
+      <Modal
+        visible={showCategoryPicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowCategoryPicker(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowCategoryPicker(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Select Category</Text>
+            
+            {categories.length === 0 ? (
+              <View style={styles.emptyCategoriesContainer}>
+                <Text style={styles.emptyCategoriesText}>No categories available</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={loadCategories}>
+                  <Text style={styles.retryButtonText}>Retry</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <FlatList
+                data={categories}
+                keyExtractor={(item) => item}
+                style={styles.categoryList}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    style={[
+                      styles.categoryItem,
+                      selectedCategory === item && styles.categoryItemSelected
+                    ]}
+                    onPress={() => handleCategorySelect(item)}
+                  >
+                    <Text style={[
+                      styles.categoryItemText,
+                      selectedCategory === item && styles.categoryItemTextSelected
+                    ]}>
+                      {item}
+                    </Text>
+                    {selectedCategory === item && (
+                      <Text style={styles.checkmark}>✓</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+            
+            <TouchableOpacity 
+              style={styles.modalCancelBtn}
+              onPress={() => setShowCategoryPicker(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -543,6 +705,10 @@ const styles = StyleSheet.create({
   required: {
     color: '#EF4444',
   },
+  optionalTag: {
+    color: '#6B7280',
+    fontWeight: '400',
+  },
   input: {
     backgroundColor: '#F9FAFB',
     borderWidth: 1,
@@ -574,6 +740,29 @@ const styles = StyleSheet.create({
   },
   thirdWidth: {
     flex: 1,
+  },
+  // Picker styles
+  pickerButton: {
+    backgroundColor: '#F9FAFB',
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  pickerButtonText: {
+    fontSize: 16,
+    color: '#111827',
+  },
+  pickerPlaceholder: {
+    color: '#9CA3AF',
+  },
+  pickerArrow: {
+    fontSize: 12,
+    color: '#6B7280',
   },
   submitButton: {
     backgroundColor: '#4F46E5',
@@ -608,5 +797,95 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 40,
+    maxHeight: '70%',
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  categoryList: {
+    maxHeight: 300,
+  },
+  categoryItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    marginBottom: 8,
+  },
+  categoryItemSelected: {
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#4F46E5',
+  },
+  categoryItemText: {
+    fontSize: 16,
+    color: '#374151',
+  },
+  categoryItemTextSelected: {
+    color: '#4F46E5',
+    fontWeight: '600',
+  },
+  checkmark: {
+    fontSize: 18,
+    color: '#4F46E5',
+    fontWeight: '600',
+  },
+  emptyCategoriesContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  emptyCategoriesText: {
+    fontSize: 16,
+    color: '#6B7280',
+    marginBottom: 12,
+  },
+  retryButton: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#4F46E5',
+    borderRadius: 8,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  modalCancelBtn: {
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 12,
+    backgroundColor: '#F3F4F6',
+    borderRadius: 12,
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
   },
 });
