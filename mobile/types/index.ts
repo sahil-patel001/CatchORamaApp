@@ -84,6 +84,19 @@ export interface ProductResponse {
   }>;
 }
 
+export interface DeleteProductResponse {
+  success: boolean;
+  message?: string;
+  data?: {
+    product?: Product;
+    id?: string;
+  };
+  error?: {
+    message: string;
+    code?: string;
+  };
+}
+
 // Form types
 export interface ProductFormData {
   name: string;

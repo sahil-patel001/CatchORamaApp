@@ -1,5 +1,11 @@
 import api from './api';
-import { Product, ProductListResponse, ProductResponse, ProductFormData } from '../types';
+import {
+  Product,
+  ProductListResponse,
+  ProductResponse,
+  ProductFormData,
+  DeleteProductResponse,
+} from '../types';
 import { resolveImageUrl } from './images';
 
 const isHttpUrl = (value: string) => /^https?:\/\//i.test(value);
@@ -223,6 +229,11 @@ export const updateProduct = async (
   });
   
   return normalizeProductResponse(response.data);
+};
+
+export const deleteProduct = async (id: string): Promise<DeleteProductResponse> => {
+  const response = await api.delete<DeleteProductResponse>(`/products/${id}`);
+  return response.data;
 };
 
 export const getCategories = async (): Promise<{ categories: string[] }> => {

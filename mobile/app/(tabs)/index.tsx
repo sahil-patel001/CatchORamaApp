@@ -12,17 +12,18 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductsContext';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
-import { getProducts } from '../../services/products';
+import { deleteProduct, getProducts } from '../../services/products';
 import { Product } from '../../types';
 
 const ITEMS_PER_PAGE = 20;
 
 export default function ProductListScreen() {
   const { user, logout } = useAuth();
-  const { productsChangeCounter } = useProducts();
+  const { productsChangeCounter, markProductsChanged } = useProducts();
   const { checkConnection } = useNetworkStatus();
   const router = useRouter();
   const listRef = useRef<FlatList<Product> | null>(null);
@@ -36,6 +37,7 @@ export default function ProductListScreen() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
+  const [deletingById, setDeletingById] = useState<Record<string, boolean>>({});
 
   const fetchProducts = useCallback(async (pageNum: number, refresh = false) => {
     const isConnected = await checkConnection();
@@ -154,6 +156,53 @@ export default function ProductListScreen() {
     router.push(`/product/${product._id}`);
   };
 
+  const confirmDeleteProduct = useCallback(
+    (product: Product) => {
+      Alert.alert(
+        'Delete product?',
+        `This will permanently delete "${product.name}".`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: async () => {
+              const isConnected = await checkConnection();
+              if (!isConnected) return;
+
+              setDeletingById((prev) => ({ ...prev, [product._id]: true }));
+              try {
+                const res = await deleteProduct(product._id);
+                if (!res?.success) {
+                  throw new Error(res?.error?.message || 'Failed to delete product');
+                }
+
+                // Remove from the current list immediately.
+                setProducts((prev) => prev.filter((p) => p._id !== product._id));
+                // Notify other screens (e.g. add/edit) that products changed.
+                markProductsChanged();
+              } catch (error: any) {
+                Alert.alert(
+                  'Error',
+                  error?.response?.data?.error?.message ||
+                    error?.message ||
+                    'Failed to delete product'
+                );
+              } finally {
+                setDeletingById((prev) => {
+                  const next = { ...prev };
+                  delete next[product._id];
+                  return next;
+                });
+              }
+            },
+          },
+        ]
+      );
+    },
+    [checkConnection, markProductsChanged]
+  );
+
   const getStockStatusColor = (stock: number, threshold: number = 10) => {
     if (stock === 0) return '#EF4444';
     if (stock <= threshold) return '#F59E0B';
@@ -163,12 +212,14 @@ export default function ProductListScreen() {
   const renderProduct = ({ item }: { item: Product }) => {
     const primaryImage = item.images?.find(img => img.isPrimary) || item.images?.[0];
     const stockThreshold = item.inventory?.lowStockThreshold || 10;
+    const isDeleting = !!deletingById[item._id];
     
     return (
       <TouchableOpacity
         style={styles.productCard}
         onPress={() => handleProductPress(item)}
         activeOpacity={0.7}
+        disabled={isDeleting}
       >
         <View style={styles.productImageContainer}>
           {primaryImage?.url ? (
@@ -188,15 +239,23 @@ export default function ProductListScreen() {
           <Text style={styles.productName} numberOfLines={2}>
             {item.name}
           </Text>
-          <Text style={styles.productCategory}>{item.category}</Text>
+          <View style={styles.metaRow}>
+            <View style={styles.categoryPill}>
+              <Text style={styles.categoryText} numberOfLines={1}>
+                {item.category}
+              </Text>
+            </View>
+          </View>
           
           <View style={styles.productDetails}>
             <View style={styles.priceContainer}>
-              <Text style={styles.price}>${item.price.toFixed(2)}</Text>
-              {item.discountPrice && (
-                <Text style={styles.discountPrice}>
-                  ${item.discountPrice.toFixed(2)}
-                </Text>
+              {typeof item.discountPrice === 'number' ? (
+                <>
+                  <Text style={styles.price}>${item.discountPrice.toFixed(2)}</Text>
+                  <Text style={styles.originalPrice}>${item.price.toFixed(2)}</Text>
+                </>
+              ) : (
+                <Text style={styles.price}>${item.price.toFixed(2)}</Text>
               )}
             </View>
             
@@ -218,7 +277,27 @@ export default function ProductListScreen() {
           </View>
         </View>
         
-        <Text style={styles.chevron}>›</Text>
+        <View style={styles.actionsContainer}>
+          <TouchableOpacity
+            accessibilityRole="button"
+            accessibilityLabel={`Delete ${item.name}`}
+            style={[styles.deleteButton, isDeleting && styles.deleteButtonDisabled]}
+            onPress={(e) => {
+              (e as any)?.stopPropagation?.();
+              if (isDeleting) return;
+              confirmDeleteProduct(item);
+            }}
+            activeOpacity={0.7}
+            disabled={isDeleting}
+          >
+            {isDeleting ? (
+              <ActivityIndicator size="small" color="#DC2626" />
+            ) : (
+              <Ionicons name="trash-outline" size={18} color="#DC2626" />
+            )}
+          </TouchableOpacity>
+          <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+        </View>
       </TouchableOpacity>
     );
   };
@@ -303,7 +382,7 @@ export default function ProductListScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: '#F6F7FB',
   },
   header: {
     flexDirection: 'row',
@@ -355,22 +434,24 @@ const styles = StyleSheet.create({
   productCard: {
     flexDirection: 'row',
     backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 12,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 14,
+    borderWidth: 1,
+    borderColor: '#EEF2F7',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.06,
+    shadowRadius: 10,
+    elevation: 3,
     alignItems: 'center',
   },
   productImageContainer: {
-    width: 80,
-    height: 80,
-    borderRadius: 8,
+    width: 76,
+    height: 76,
+    borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#F3F4F6',
+    backgroundColor: '#F1F5F9',
   },
   productImage: {
     width: '100%',
@@ -391,14 +472,30 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 4,
-  },
-  productCategory: {
-    fontSize: 12,
-    color: '#6B7280',
+    fontWeight: '700',
+    color: '#0F172A',
     marginBottom: 8,
+    letterSpacing: -0.2,
+  },
+  metaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 10,
+  },
+  categoryPill: {
+    maxWidth: '100%',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 999,
+    backgroundColor: '#F1F5F9',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#475569',
   },
   productDetails: {
     flexDirection: 'row',
@@ -407,17 +504,18 @@ const styles = StyleSheet.create({
   },
   priceContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+    alignItems: 'baseline',
+    gap: 10,
   },
   price: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#111827',
+    fontWeight: '800',
+    color: '#0F172A',
   },
-  discountPrice: {
-    fontSize: 14,
-    color: '#10B981',
+  originalPrice: {
+    fontSize: 13,
+    color: '#94A3B8',
+    textDecorationLine: 'line-through',
     fontWeight: '600',
   },
   stockBadge: {
@@ -425,7 +523,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 8,
     paddingVertical: 4,
-    borderRadius: 12,
+    borderRadius: 999,
   },
   stockDot: {
     width: 6,
@@ -437,10 +535,24 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
   },
-  chevron: {
-    fontSize: 24,
-    color: '#D1D5DB',
-    marginLeft: 8,
+  actionsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginLeft: 10,
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: '#FFF1F2',
+    borderWidth: 1,
+    borderColor: '#FECDD3',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  deleteButtonDisabled: {
+    opacity: 0.7,
   },
   loadingContainer: {
     flex: 1,
