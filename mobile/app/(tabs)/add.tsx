@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Modal,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -18,6 +19,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import * as ImagePicker from 'expo-image-picker';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useAuth } from '../../context/AuthContext';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { createProduct, getCategories } from '../../services/products';
@@ -54,7 +56,10 @@ export default function AddProductScreen() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [categories, setCategories] = useState<string[]>([]);
-  const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [showImagePicker, setShowImagePicker] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
+  const [cameraPermission, requestCameraPermission] = useCameraPermissions();
+  const cameraRef = React.useRef<CameraView>(null);
 
   const isSuperAdmin = user?.role === 'superadmin';
 
@@ -95,7 +100,13 @@ export default function AddProductScreen() {
     }
   };
 
-  const pickImage = async () => {
+  const handleImagePickerOption = () => {
+    setShowImagePicker(true);
+  };
+
+  const pickImageFromGallery = async () => {
+    setShowImagePicker(false);
+    
     const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
     
     if (!permissionResult.granted) {
@@ -112,6 +123,37 @@ export default function AddProductScreen() {
 
     if (!result.canceled && result.assets[0]) {
       setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const openCamera = async () => {
+    setShowImagePicker(false);
+    
+    if (!cameraPermission?.granted) {
+      const permission = await requestCameraPermission();
+      if (!permission.granted) {
+        Alert.alert('Permission Required', 'Please allow access to your camera');
+        return;
+      }
+    }
+    
+    setShowCamera(true);
+  };
+
+  const takePicture = async () => {
+    if (cameraRef.current) {
+      try {
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.8,
+        });
+        if (photo?.uri) {
+          setImageUri(photo.uri);
+        }
+        setShowCamera(false);
+      } catch (error) {
+        console.error('Error taking picture:', error);
+        Alert.alert('Error', 'Failed to take picture');
+      }
     }
   };
 
@@ -197,6 +239,37 @@ export default function AddProductScreen() {
     </View>
   );
 
+  // Camera View Modal
+  if (showCamera) {
+    return (
+      <View style={styles.cameraContainer}>
+        <CameraView 
+          ref={cameraRef}
+          style={styles.camera}
+          facing="back"
+        >
+          <View style={styles.cameraOverlay}>
+            <TouchableOpacity 
+              style={styles.cameraCloseBtn}
+              onPress={() => setShowCamera(false)}
+            >
+              <Text style={styles.cameraCloseBtnText}>✕</Text>
+            </TouchableOpacity>
+            
+            <View style={styles.cameraBottomBar}>
+              <TouchableOpacity 
+                style={styles.captureBtn}
+                onPress={takePicture}
+              >
+                <View style={styles.captureBtnInner} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </CameraView>
+      </View>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <KeyboardAvoidingView
@@ -212,13 +285,16 @@ export default function AddProductScreen() {
           <Text style={styles.subtitle}>Fill in the details below</Text>
 
           {/* Image Picker */}
-          <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+          <TouchableOpacity style={styles.imagePicker} onPress={handleImagePickerOption}>
             {imageUri ? (
               <Image source={{ uri: imageUri }} style={styles.selectedImage} />
             ) : (
               <View style={styles.imagePickerContent}>
-                <Text style={styles.imagePickerIcon}>📷</Text>
-                <Text style={styles.imagePickerText}>Tap to select image</Text>
+                <View style={styles.imageIconContainer}>
+                  <Text style={styles.imagePickerIcon}>📷</Text>
+                </View>
+                <Text style={styles.imagePickerText}>Tap to add product image</Text>
+                <Text style={styles.imagePickerSubtext}>Take a photo or choose from gallery</Text>
               </View>
             )}
           </TouchableOpacity>
@@ -291,6 +367,52 @@ export default function AddProductScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Image Picker Modal */}
+      <Modal
+        visible={showImagePicker}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setShowImagePicker(false)}
+      >
+        <TouchableOpacity 
+          style={styles.modalOverlay}
+          activeOpacity={1}
+          onPress={() => setShowImagePicker(false)}
+        >
+          <View style={styles.modalContent}>
+            <View style={styles.modalHandle} />
+            <Text style={styles.modalTitle}>Add Product Image</Text>
+            
+            <TouchableOpacity style={styles.modalOption} onPress={openCamera}>
+              <View style={styles.modalOptionIcon}>
+                <Text style={styles.modalOptionEmoji}>📸</Text>
+              </View>
+              <View style={styles.modalOptionText}>
+                <Text style={styles.modalOptionTitle}>Take Photo</Text>
+                <Text style={styles.modalOptionSubtitle}>Use your camera to capture</Text>
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.modalOption} onPress={pickImageFromGallery}>
+              <View style={styles.modalOptionIcon}>
+                <Text style={styles.modalOptionEmoji}>🖼️</Text>
+              </View>
+              <View style={styles.modalOptionText}>
+                <Text style={styles.modalOptionTitle}>Choose from Gallery</Text>
+                <Text style={styles.modalOptionSubtitle}>Select from your photos</Text>
+              </View>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.modalCancelBtn}
+              onPress={() => setShowImagePicker(false)}
+            >
+              <Text style={styles.modalCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -325,7 +447,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 200,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     borderWidth: 2,
     borderColor: '#E5E7EB',
     borderStyle: 'dashed',
@@ -337,13 +459,27 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  imageIconContainer: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
   imagePickerIcon: {
-    fontSize: 48,
-    marginBottom: 8,
+    fontSize: 28,
   },
   imagePickerText: {
-    color: '#6B7280',
-    fontSize: 14,
+    color: '#374151',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  imagePickerSubtext: {
+    color: '#9CA3AF',
+    fontSize: 13,
   },
   selectedImage: {
     width: '100%',
@@ -351,9 +487,14 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: 16,
     marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.03,
+    shadowRadius: 4,
+    elevation: 1,
   },
   sectionTitle: {
     fontSize: 16,
@@ -377,8 +518,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#F9FAFB',
     borderWidth: 1,
     borderColor: '#E5E7EB',
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    borderRadius: 10,
+    paddingHorizontal: 14,
     paddingVertical: 12,
     fontSize: 16,
     color: '#111827',
@@ -411,6 +552,11 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     alignItems: 'center',
     marginTop: 8,
+    shadowColor: '#4F46E5',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 4,
   },
   submitButtonDisabled: {
     opacity: 0.7,
@@ -419,5 +565,121 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  // Modal styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    padding: 20,
+    paddingBottom: 40,
+  },
+  modalHandle: {
+    width: 40,
+    height: 4,
+    backgroundColor: '#E5E7EB',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    backgroundColor: '#F9FAFB',
+    borderRadius: 12,
+    marginBottom: 12,
+  },
+  modalOptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#EEF2FF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 14,
+  },
+  modalOptionEmoji: {
+    fontSize: 22,
+  },
+  modalOptionText: {
+    flex: 1,
+  },
+  modalOptionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#111827',
+    marginBottom: 2,
+  },
+  modalOptionSubtitle: {
+    fontSize: 13,
+    color: '#6B7280',
+  },
+  modalCancelBtn: {
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  modalCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  // Camera styles
+  cameraContainer: {
+    flex: 1,
+    backgroundColor: '#000',
+  },
+  camera: {
+    flex: 1,
+  },
+  cameraOverlay: {
+    flex: 1,
+    justifyContent: 'space-between',
+  },
+  cameraCloseBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    margin: 20,
+    marginTop: 50,
+  },
+  cameraCloseBtnText: {
+    color: '#fff',
+    fontSize: 20,
+    fontWeight: '600',
+  },
+  cameraBottomBar: {
+    alignItems: 'center',
+    paddingBottom: 50,
+  },
+  captureBtn: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  captureBtnInner: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#fff',
   },
 });
