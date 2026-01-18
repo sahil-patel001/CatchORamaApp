@@ -57,7 +57,10 @@ const buildProductSchema = (requireVendorId: boolean) =>
       .string()
       .min(1, 'Weight is required')
       .refine((val) => !isNaN(parseFloat(val)) && parseFloat(val) > 0, 'Must be a positive number'),
-    lowStockThreshold: z.string().optional(),
+    lowStockThreshold: z.preprocess(
+      (val) => (val === undefined || val === '' ? undefined : parseInt(String(val), 10)),
+      z.number().int().nonnegative().optional()
+    ),
     vendorId: requireVendorId ? z.string().min(1, 'Vendor ID is required') : z.string().optional(),
   })
     .refine((data) => {

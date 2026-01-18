@@ -19,6 +19,28 @@ const guessImageMimeType = (filename: string): string => {
 
 const appendIfDefined = (formData: FormData, key: string, value: unknown) => {
   if (value === undefined || value === null) return;
+
+  // Allow binary payloads to be appended directly.
+  const isBlob =
+    typeof Blob !== 'undefined' && value instanceof Blob;
+  const isFile =
+    typeof File !== 'undefined' && value instanceof File;
+  if (isBlob || isFile) {
+    formData.append(key, value as any);
+    return;
+  }
+
+  // Convert primitives to strings; stringify objects/arrays to preserve structure.
+  if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+    formData.append(key, String(value));
+    return;
+  }
+
+  if (typeof value === 'object') {
+    formData.append(key, JSON.stringify(value));
+    return;
+  }
+
   formData.append(key, String(value));
 };
 
@@ -103,9 +125,9 @@ export const updateProduct = async (
   appendIfDefined(formData, 'category', data.category);
 
   // Keep explicit clearing behavior for optional string fields.
-  if (data.discountPrice !== undefined) formData.append('discountPrice', data.discountPrice || '');
-  if (data.description !== undefined) formData.append('description', data.description || '');
-  if (data.customFields !== undefined) formData.append('customFields', data.customFields || '');
+  if (data.discountPrice !== undefined) formData.append('discountPrice', data.discountPrice ?? '');
+  if (data.description !== undefined) formData.append('description', data.description ?? '');
+  if (data.customFields !== undefined) formData.append('customFields', data.customFields ?? '');
 
   appendIfDefined(formData, 'lowStockThreshold', data.lowStockThreshold);
   appendIfDefined(formData, 'length', data.length);

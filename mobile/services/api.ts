@@ -2,7 +2,17 @@ import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
 // Hardcode the API URL to ensure it works across all environments
-const API_URL = 'https://api.catchorama.com/api/v1';
+export const API_URL = 'https://api.catchorama.com/api/v1';
+
+// Useful for building absolute asset URLs (e.g. `/uploads/...`).
+export const API_ORIGIN = (() => {
+  try {
+    return new URL(API_URL).origin;
+  } catch {
+    // Fallback: strip any path after the host.
+    return API_URL.replace(/\/api\/v\d+.*$/i, '').replace(/\/+$/, '');
+  }
+})();
 
 console.log('[API] Base URL:', API_URL);
 

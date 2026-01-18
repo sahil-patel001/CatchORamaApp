@@ -4,6 +4,7 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
   StyleSheet,
   ScrollView,
   KeyboardAvoidingView,
@@ -539,51 +540,53 @@ export default function EditProductScreen() {
           activeOpacity={1}
           onPress={() => setShowCategoryPicker(false)}
         >
-          <View style={styles.modalContent}>
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Select Category</Text>
-            
-            {categories.length === 0 ? (
-              <View style={styles.emptyCategoriesContainer}>
-                <Text style={styles.emptyCategoriesText}>No categories available</Text>
-                <TouchableOpacity style={styles.retryButton} onPress={loadCategories}>
-                  <Text style={styles.retryButtonText}>Retry</Text>
-                </TouchableOpacity>
-              </View>
-            ) : (
-              <FlatList
-                data={categories}
-                keyExtractor={(item) => item}
-                style={styles.categoryList}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={[
-                      styles.categoryItem,
-                      selectedCategory === item && styles.categoryItemSelected
-                    ]}
-                    onPress={() => handleCategorySelect(item)}
-                  >
-                    <Text style={[
-                      styles.categoryItemText,
-                      selectedCategory === item && styles.categoryItemTextSelected
-                    ]}>
-                      {item}
-                    </Text>
-                    {selectedCategory === item && (
-                      <Text style={styles.checkmark}>✓</Text>
-                    )}
+          <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
+            <View style={styles.modalContent}>
+              <View style={styles.modalHandle} />
+              <Text style={styles.modalTitle}>Select Category</Text>
+              
+              {categories.length === 0 ? (
+                <View style={styles.emptyCategoriesContainer}>
+                  <Text style={styles.emptyCategoriesText}>No categories available</Text>
+                  <TouchableOpacity style={styles.retryButton} onPress={loadCategories}>
+                    <Text style={styles.retryButtonText}>Retry</Text>
                   </TouchableOpacity>
-                )}
-              />
-            )}
-            
-            <TouchableOpacity 
-              style={styles.modalCancelBtn}
-              onPress={() => setShowCategoryPicker(false)}
-            >
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </View>
+                </View>
+              ) : (
+                <FlatList
+                  data={categories}
+                  keyExtractor={(item) => item}
+                  style={styles.categoryList}
+                  renderItem={({ item }) => (
+                    <TouchableOpacity
+                      style={[
+                        styles.categoryItem,
+                        selectedCategory === item && styles.categoryItemSelected
+                      ]}
+                      onPress={() => handleCategorySelect(item)}
+                    >
+                      <Text style={[
+                        styles.categoryItemText,
+                        selectedCategory === item && styles.categoryItemTextSelected
+                      ]}>
+                        {item}
+                      </Text>
+                      {selectedCategory === item && (
+                        <Text style={styles.checkmark}>✓</Text>
+                      )}
+                    </TouchableOpacity>
+                  )}
+                />
+              )}
+              
+              <TouchableOpacity 
+                style={styles.modalCancelBtn}
+                onPress={() => setShowCategoryPicker(false)}
+              >
+                <Text style={styles.modalCancelText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableWithoutFeedback>
         </TouchableOpacity>
       </Modal>
     </SafeAreaView>
