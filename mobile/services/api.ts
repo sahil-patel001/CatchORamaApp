@@ -12,8 +12,41 @@ const api = axios.create({
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
+    'Accept': 'application/json',
   },
 });
+
+// Debug interceptor to log all requests
+api.interceptors.request.use(
+  (config) => {
+    console.log('[API Request]', config.method?.toUpperCase(), config.url);
+    console.log('[API Request Headers]', JSON.stringify(config.headers, null, 2));
+    if (config.data) {
+      console.log('[API Request Data]', JSON.stringify(config.data, null, 2));
+    }
+    return config;
+  },
+  (error) => {
+    console.log('[API Request Error]', error);
+    return Promise.reject(error);
+  }
+);
+
+// Debug interceptor to log all responses
+api.interceptors.response.use(
+  (response) => {
+    console.log('[API Response]', response.status, response.config.url);
+    return response;
+  },
+  (error) => {
+    console.log('[API Response Error]', error.message);
+    if (error.response) {
+      console.log('[API Response Error Status]', error.response.status);
+      console.log('[API Response Error Data]', JSON.stringify(error.response.data, null, 2));
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Token storage keys
 export const TOKEN_KEY = 'user_token';
