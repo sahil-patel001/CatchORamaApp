@@ -6,10 +6,31 @@ export const login = async (data: LoginFormData): Promise<{ success: boolean; us
   
   try {
     const response = await api.post<AuthResponse>('/auth/login', data);
-    console.log('[Auth] Login response:', JSON.stringify(response.data, null, 2));
+    console.log('[Auth] Login response success:', response.data.success);
     
     if (response.data.success && response.data.data) {
-      const { user, token, refreshToken } = response.data.data;
+      const responseData = response.data.data;
+      
+      // Extract user data - handle both nested token and separate token cases
+      const user: User = {
+        id: responseData.user.id,
+        name: responseData.user.name,
+        email: responseData.user.email,
+        role: responseData.user.role,
+        vendorId: responseData.user.vendorId,
+        businessName: responseData.user.businessName,
+        createdAt: responseData.user.createdAt,
+        lastLogin: responseData.user.lastLogin,
+      };
+      
+      // Get tokens - they could be at root level of data
+      const token = responseData.token;
+      const refreshToken = responseData.refreshToken;
+      
+      if (!token || !refreshToken) {
+        console.log('[Auth] Missing tokens in response');
+        return { success: false, error: 'Invalid response from server' };
+      }
       
       // Store tokens securely
       await setToken(token);
@@ -27,8 +48,7 @@ export const login = async (data: LoginFormData): Promise<{ success: boolean; us
       error: errorMsg
     };
   } catch (error: any) {
-    console.log('[Auth] Login error:', error);
-    console.log('[Auth] Error response:', error.response?.data);
+    console.log('[Auth] Login error:', error.message);
     
     // Handle network errors
     if (error.code === 'ERR_NETWORK' || error.message === 'Network Error') {
@@ -36,8 +56,11 @@ export const login = async (data: LoginFormData): Promise<{ success: boolean; us
     }
     
     // Handle API error responses
-    const message = error.response?.data?.error?.message || error.message || 'Login failed';
-    return { success: false, error: message };
+    if (error.response?.data?.error?.message) {
+      return { success: false, error: error.response.data.error.message };
+    }
+    
+    return { success: false, error: error.message || 'Login failed' };
   }
 };
 
