@@ -18,6 +18,7 @@ export default function RootLayout() {
               options={{ 
                 headerShown: true,
                 title: 'Edit Product',
+                headerBackTitle: 'Back',
                 headerStyle: { backgroundColor: '#4F46E5' },
                 headerTintColor: '#fff',
               }} 

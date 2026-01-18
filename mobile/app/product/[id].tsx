@@ -22,11 +22,13 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import * as ImagePicker from 'expo-image-picker';
+import Svg, { Path, Circle, Rect } from 'react-native-svg';
 import { useAuth } from '../../context/AuthContext';
 import { useProducts } from '../../context/ProductsContext';
 import { useNetworkStatus } from '../../hooks/useNetworkStatus';
 import { getCategories, getProduct, updateProduct } from '../../services/products';
 import { ProductFormData, Product } from '../../types';
+import { colors, shadows, borderRadius, spacing } from '../../constants/theme';
 
 const buildProductSchema = (requireVendorId: boolean) =>
   z.object({
@@ -72,6 +74,127 @@ const buildProductSchema = (requireVendorId: boolean) =>
       path: ['discountPrice'],
     });
 
+// Icons
+function BackIcon() {
+  return (
+    <Svg width={22} height={22} viewBox="0 0 24 24" fill="none">
+      <Path d="M19 12H5M5 12L12 19M5 12L12 5" stroke={colors.textPrimary} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function CameraIcon({ color = colors.purple }: { color?: string }) {
+  return (
+    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M23 19C23 20.1 22.1 21 21 21H3C1.9 21 1 20.1 1 19V8C1 6.9 1.9 6 3 6H7L9 3H15L17 6H21C22.1 6 23 6.9 23 8V19Z"
+        stroke={color}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Circle cx="12" cy="13" r="4" stroke={color} strokeWidth={1.5} />
+    </Svg>
+  );
+}
+
+function LayersIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M12 2L2 7L12 12L22 7L12 2Z" stroke={colors.purple} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M2 17L12 22L22 17" stroke={colors.purple} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+      <Path d="M2 12L12 17L22 12" stroke={colors.purple} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function DollarIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M12 1V23M17 5H9.5C8.57 5 7.68 5.37 7.02 6.02C6.37 6.68 6 7.57 6 8.5C6 9.43 6.37 10.32 7.02 10.98C7.68 11.63 8.57 12 9.5 12H14.5C15.43 12 16.32 12.37 16.98 13.02C17.63 13.68 18 14.57 18 15.5C18 16.43 17.63 17.32 16.98 17.98C16.32 18.63 15.43 19 14.5 19H6"
+        stroke={colors.purple}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function RulerIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M21 16V8C21 6.9 20.1 6 19 6H5C3.9 6 3 6.9 3 8V16C3 17.1 3.9 18 5 18H19C20.1 18 21 17.1 21 16Z"
+        stroke={colors.purple}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <Path d="M3 10H21M7 6V18" stroke={colors.purple} strokeWidth={1.5} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function UserIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path
+        d="M20 21V19C20 16.79 18.21 15 16 15H8C5.79 15 4 16.79 4 19V21M12 11C14.21 11 16 9.21 16 7C16 4.79 14.21 3 12 3C9.79 3 8 4.79 8 7C8 9.21 9.79 11 12 11Z"
+        stroke={colors.danger}
+        strokeWidth={1.5}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </Svg>
+  );
+}
+
+function GridIcon({ color = colors.textMuted }: { color?: string }) {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Rect x="3" y="3" width="7" height="7" rx="2" stroke={color} strokeWidth={1.5} />
+      <Rect x="14" y="3" width="7" height="7" rx="2" stroke={color} strokeWidth={1.5} />
+      <Rect x="3" y="14" width="7" height="7" rx="2" stroke={color} strokeWidth={1.5} />
+      <Rect x="14" y="14" width="7" height="7" rx="2" stroke={color} strokeWidth={1.5} />
+    </Svg>
+  );
+}
+
+function ChevronDownIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M6 9L12 15L18 9" stroke={colors.textMuted} strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function CheckIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M20 6L9 17L4 12" stroke={colors.purple} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
+function AlertIcon() {
+  return (
+    <Svg width={14} height={14} viewBox="0 0 24 24" fill="none">
+      <Circle cx="12" cy="12" r="10" stroke={colors.danger} strokeWidth={1.5} />
+      <Path d="M12 8V12M12 16H12.01" stroke={colors.danger} strokeWidth={2} strokeLinecap="round" />
+    </Svg>
+  );
+}
+
+function SaveIcon() {
+  return (
+    <Svg width={18} height={18} viewBox="0 0 24 24" fill="none">
+      <Path d="M20 6L9 17L4 12" stroke={colors.textOnPurple} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 export default function EditProductScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user } = useAuth();
@@ -87,6 +210,7 @@ export default function EditProductScreen() {
   const [categories, setCategories] = useState<string[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(true);
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
+  const [focusedField, setFocusedField] = useState<string | null>(null);
   const isSuperAdmin = user?.role === 'superadmin';
 
   const {
@@ -95,7 +219,7 @@ export default function EditProductScreen() {
     setValue,
     watch,
     reset,
-    formState: { errors, isDirty },
+    formState: { errors },
   } = useForm<ProductFormData>({
     resolver: zodResolver(buildProductSchema(isSuperAdmin)),
     defaultValues: {
@@ -155,7 +279,6 @@ export default function EditProductScreen() {
         const p = response.data.product;
         setProduct(p);
         
-        // Set form values
         reset({
           name: p.name,
           price: p.price.toString(),
@@ -171,7 +294,6 @@ export default function EditProductScreen() {
           vendorId: p.vendorId || '',
         });
 
-        // Set existing image
         const primaryImage = p.images?.find(img => img.isPrimary) || p.images?.[0];
         if (primaryImage?.url) {
           setImageUri(primaryImage.url);
@@ -188,10 +310,8 @@ export default function EditProductScreen() {
     }
   };
 
-  // Use native OS image picker - shows default action sheet on iOS, dialog on Android
   const showImagePickerOptions = () => {
     if (Platform.OS === 'ios') {
-      // Use native iOS ActionSheet
       ActionSheetIOS.showActionSheetWithOptions(
         {
           options: ['Cancel', 'Take Photo', 'Choose from Library'],
@@ -207,7 +327,6 @@ export default function EditProductScreen() {
         }
       );
     } else {
-      // For Android, use Alert with buttons
       Alert.alert(
         'Change Product Image',
         'Choose an option',
@@ -223,7 +342,6 @@ export default function EditProductScreen() {
 
   const takePhoto = async () => {
     try {
-      // Request camera permission
       const { status } = await ImagePicker.requestCameraPermissionsAsync();
       
       if (status !== 'granted') {
@@ -235,7 +353,6 @@ export default function EditProductScreen() {
         return;
       }
 
-      // Launch native camera - uses default OS camera UI
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
@@ -255,7 +372,6 @@ export default function EditProductScreen() {
 
   const pickFromGallery = async () => {
     try {
-      // Request media library permission
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       
       if (status !== 'granted') {
@@ -267,7 +383,6 @@ export default function EditProductScreen() {
         return;
       }
 
-      // Launch native photo picker - uses default OS gallery UI
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         allowsEditing: true,
@@ -350,25 +465,39 @@ export default function EditProductScreen() {
         control={control}
         name={name}
         render={({ field: { onChange, onBlur, value } }) => (
-          <TextInput
-            style={[
-              styles.input,
-              options.multiline && styles.multilineInput,
-              errors[name] && styles.inputError,
-            ]}
-            placeholder={options.placeholder || label}
-            placeholderTextColor="#9CA3AF"
-            onBlur={onBlur}
-            onChangeText={onChange}
-            value={value}
-            keyboardType={options.keyboardType || 'default'}
-            multiline={options.multiline}
-            numberOfLines={options.multiline ? 4 : 1}
-          />
+          <View style={[
+            styles.inputWrapper,
+            focusedField === name && styles.inputWrapperFocused,
+            errors[name] && styles.inputWrapperError,
+            options.multiline && styles.inputWrapperMultiline,
+          ]}>
+            <TextInput
+              style={[
+                styles.input,
+                options.multiline && styles.multilineInput,
+              ]}
+              placeholder={options.placeholder || label}
+              placeholderTextColor={colors.inputPlaceholder}
+              onFocus={() => setFocusedField(name)}
+              onBlur={() => {
+                setFocusedField(null);
+                onBlur();
+              }}
+              onChangeText={onChange}
+              value={value}
+              keyboardType={options.keyboardType || 'default'}
+              multiline={options.multiline}
+              numberOfLines={options.multiline ? 4 : 1}
+              textAlignVertical={options.multiline ? 'top' : 'center'}
+            />
+          </View>
         )}
       />
       {errors[name] && (
-        <Text style={styles.errorText}>{errors[name]?.message}</Text>
+        <View style={styles.errorContainer}>
+          <AlertIcon />
+          <Text style={styles.errorText}>{errors[name]?.message}</Text>
+        </View>
       )}
     </View>
   );
@@ -376,6 +505,7 @@ export default function EditProductScreen() {
   const handleCategorySelect = (category: string) => {
     setValue('category', category, { shouldValidate: true });
     setShowCategoryPicker(false);
+    setFocusedField(null);
   };
 
   const renderCategoryPicker = () => (
@@ -386,27 +516,38 @@ export default function EditProductScreen() {
       <TouchableOpacity
         style={[
           styles.pickerButton,
-          errors.category && styles.inputError,
+          focusedField === 'category' && styles.inputWrapperFocused,
+          errors.category && styles.inputWrapperError,
         ]}
-        onPress={() => setShowCategoryPicker(true)}
+        onPress={() => {
+          setFocusedField('category');
+          setShowCategoryPicker(true);
+        }}
         disabled={isLoadingCategories}
+        activeOpacity={0.7}
       >
         {isLoadingCategories ? (
-          <ActivityIndicator size="small" color="#6B7280" />
+          <ActivityIndicator size="small" color={colors.purple} />
         ) : (
           <>
-            <Text style={[
-              styles.pickerButtonText,
-              !selectedCategory && styles.pickerPlaceholder
-            ]}>
-              {selectedCategory || 'Select a category'}
-            </Text>
-            <Text style={styles.pickerArrow}>▼</Text>
+            <View style={styles.pickerContent}>
+              <GridIcon color={selectedCategory ? colors.purple : colors.textMuted} />
+              <Text style={[
+                styles.pickerButtonText,
+                !selectedCategory && styles.pickerPlaceholder
+              ]}>
+                {selectedCategory || 'Select a category'}
+              </Text>
+            </View>
+            <ChevronDownIcon />
           </>
         )}
       </TouchableOpacity>
       {errors.category && (
-        <Text style={styles.errorText}>{errors.category.message}</Text>
+        <View style={styles.errorContainer}>
+          <AlertIcon />
+          <Text style={styles.errorText}>{errors.category.message}</Text>
+        </View>
       )}
     </View>
   );
@@ -414,136 +555,188 @@ export default function EditProductScreen() {
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#4F46E5" />
+        <ActivityIndicator size="large" color={colors.purple} />
         <Text style={styles.loadingText}>Loading product...</Text>
       </View>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['bottom']}>
-      <KeyboardAvoidingView
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-        style={styles.keyboardView}
-      >
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+          style={styles.keyboardView}
         >
-          {/* Image Picker - Uses Native OS UI */}
-          <TouchableOpacity 
-            style={styles.imagePicker} 
-            onPress={showImagePickerOptions}
-            activeOpacity={0.7}
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
           >
-            {imageUri ? (
-              <View style={styles.selectedImageContainer}>
-                <Image source={{ uri: imageUri }} style={styles.selectedImage} />
-                <View style={styles.changeImageOverlay}>
-                  <Text style={styles.changeImageText}>Tap to Change Image</Text>
+            {/* Header */}
+            <View style={styles.header}>
+              <View style={styles.headerText}>
+                <Text style={styles.title}>Edit Product</Text>
+                <Text style={styles.subtitle} numberOfLines={1}>{product?.name}</Text>
+              </View>
+            </View>
+
+            {/* Image Picker */}
+            <TouchableOpacity 
+              style={styles.imagePicker} 
+              onPress={showImagePickerOptions}
+              activeOpacity={0.7}
+            >
+              {imageUri ? (
+                <View style={styles.selectedImageContainer}>
+                  <Image source={{ uri: imageUri }} style={styles.selectedImage} />
+                  <View style={styles.changeImageOverlay}>
+                    <CameraIcon color={colors.textOnPurple} />
+                    <Text style={styles.changeImageText}>Tap to Change Image</Text>
+                  </View>
+                  {hasNewImage && (
+                    <View style={styles.newImageBadge}>
+                      <Text style={styles.newImageBadgeText}>NEW</Text>
+                    </View>
+                  )}
                 </View>
-              </View>
-            ) : (
-              <View style={styles.imagePickerContent}>
-                <View style={styles.imageIconContainer}>
-                  <Text style={styles.imagePickerIcon}>📷</Text>
+              ) : (
+                <View style={styles.imagePickerContent}>
+                  <View style={styles.imageIconContainer}>
+                    <CameraIcon />
+                  </View>
+                  <Text style={styles.imagePickerText}>Add Product Image</Text>
+                  <Text style={styles.imagePickerSubtext}>Take a photo or choose from gallery</Text>
                 </View>
-                <Text style={styles.imagePickerText}>Tap to add image</Text>
-                <Text style={styles.imagePickerSubtext}>Take a photo or choose from gallery</Text>
-              </View>
-            )}
-          </TouchableOpacity>
+              )}
+            </TouchableOpacity>
 
-          {/* Basic Info */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Basic Information</Text>
-            {renderInput('name', 'Product Name', { required: true, placeholder: 'Enter product name' })}
-            {renderCategoryPicker()}
-            {renderInput('description', 'Description', { multiline: true, placeholder: 'Product description...' })}
-          </View>
-
-          {/* Pricing */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Pricing & Stock</Text>
-            <View style={styles.row}>
-              <View style={styles.halfWidth}>
-                {renderInput('price', 'Price ($)', { required: true, keyboardType: 'decimal-pad' })}
-              </View>
-              <View style={styles.halfWidth}>
-                {renderInput('discountPrice', 'Discount Price', { keyboardType: 'decimal-pad' })}
-              </View>
-            </View>
-            <View style={styles.row}>
-              <View style={styles.halfWidth}>
-                {renderInput('stock', 'Stock', { required: true, keyboardType: 'numeric' })}
-              </View>
-              <View style={styles.halfWidth}>
-                {renderInput('lowStockThreshold', 'Low Stock Alert', { keyboardType: 'numeric' })}
-              </View>
-            </View>
-          </View>
-
-          {/* Dimensions */}
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Dimensions & Weight</Text>
-            <View style={styles.row}>
-              <View style={styles.thirdWidth}>
-                {renderInput('length', 'L (cm)', { required: true, keyboardType: 'decimal-pad', placeholder: '0' })}
-              </View>
-              <View style={styles.thirdWidth}>
-                {renderInput('breadth', 'B (cm)', { required: true, keyboardType: 'decimal-pad', placeholder: '0' })}
-              </View>
-              <View style={styles.thirdWidth}>
-                {renderInput('height', 'H (cm)', { required: true, keyboardType: 'decimal-pad', placeholder: '0' })}
-              </View>
-            </View>
-            {renderInput('weight', 'Weight (kg)', { required: true, keyboardType: 'decimal-pad', placeholder: '0' })}
-          </View>
-
-          {/* Vendor ID - Only for Superadmin */}
-          {isSuperAdmin && (
+            {/* Basic Info Section */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Vendor Assignment</Text>
-              {renderInput('vendorId', 'Vendor ID', { required: true, placeholder: 'Enter vendor ID' })}
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionIconContainer}>
+                  <LayersIcon />
+                </View>
+                <Text style={styles.sectionTitle}>Basic Information</Text>
+              </View>
+              {renderInput('name', 'Product Name', { required: true, placeholder: 'Enter product name' })}
+              {renderCategoryPicker()}
+              {renderInput('description', 'Description', { multiline: true, placeholder: 'Describe your product...' })}
             </View>
-          )}
 
-          {/* Submit Button */}
-          <TouchableOpacity
-            style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
-            onPress={handleSubmit(onSubmit)}
-            disabled={isSubmitting}
-          >
-            {isSubmitting ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.submitButtonText}>Update Product</Text>
+            {/* Pricing Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionIconContainer}>
+                  <DollarIcon />
+                </View>
+                <Text style={styles.sectionTitle}>Pricing & Stock</Text>
+              </View>
+              <View style={styles.row}>
+                <View style={styles.halfWidth}>
+                  {renderInput('price', 'Price ($)', { required: true, keyboardType: 'decimal-pad', placeholder: '0.00' })}
+                </View>
+                <View style={styles.halfWidth}>
+                  {renderInput('discountPrice', 'Sale Price', { keyboardType: 'decimal-pad', placeholder: '0.00' })}
+                </View>
+              </View>
+              <View style={styles.row}>
+                <View style={styles.halfWidth}>
+                  {renderInput('stock', 'Stock Qty', { required: true, keyboardType: 'numeric', placeholder: '0' })}
+                </View>
+                <View style={styles.halfWidth}>
+                  {renderInput('lowStockThreshold', 'Low Stock Alert', { keyboardType: 'numeric', placeholder: '10' })}
+                </View>
+              </View>
+            </View>
+
+            {/* Dimensions Section */}
+            <View style={styles.section}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionIconContainer}>
+                  <RulerIcon />
+                </View>
+                <Text style={styles.sectionTitle}>Dimensions & Weight</Text>
+              </View>
+              <View style={styles.row}>
+                <View style={styles.thirdWidth}>
+                  {renderInput('length', 'L (cm)', { required: true, keyboardType: 'decimal-pad', placeholder: '0' })}
+                </View>
+                <View style={styles.thirdWidth}>
+                  {renderInput('breadth', 'W (cm)', { required: true, keyboardType: 'decimal-pad', placeholder: '0' })}
+                </View>
+                <View style={styles.thirdWidth}>
+                  {renderInput('height', 'H (cm)', { required: true, keyboardType: 'decimal-pad', placeholder: '0' })}
+                </View>
+              </View>
+              {renderInput('weight', 'Weight (kg)', { required: true, keyboardType: 'decimal-pad', placeholder: '0.00' })}
+            </View>
+
+            {/* Vendor ID - Only for Superadmin */}
+            {isSuperAdmin && (
+              <View style={styles.section}>
+                <View style={styles.sectionHeader}>
+                  <View style={[styles.sectionIconContainer, styles.sectionIconDanger]}>
+                    <UserIcon />
+                  </View>
+                  <Text style={styles.sectionTitle}>Vendor Assignment</Text>
+                </View>
+                {renderInput('vendorId', 'Vendor ID', { required: true, placeholder: 'Enter vendor ID' })}
+              </View>
             )}
-          </TouchableOpacity>
 
-          {/* Cancel Button */}
-          <TouchableOpacity
-            style={styles.cancelButton}
-            onPress={() => router.back()}
-            disabled={isSubmitting}
-          >
-            <Text style={styles.cancelButtonText}>Cancel</Text>
-          </TouchableOpacity>
-        </ScrollView>
-      </KeyboardAvoidingView>
+            {/* Action Buttons */}
+            <View style={styles.actionsContainer}>
+              <TouchableOpacity
+                style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+                onPress={handleSubmit(onSubmit)}
+                disabled={isSubmitting}
+                activeOpacity={0.8}
+              >
+                {isSubmitting ? (
+                  <ActivityIndicator color={colors.textOnPurple} />
+                ) : (
+                  <>
+                    <SaveIcon />
+                    <Text style={styles.submitButtonText}>Save Changes</Text>
+                  </>
+                )}
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.cancelButton}
+                onPress={() => router.back()}
+                disabled={isSubmitting}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.cancelButtonText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+            
+            {/* Bottom spacing */}
+            <View style={{ height: 40 }} />
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
 
       {/* Category Picker Modal */}
       <Modal
         visible={showCategoryPicker}
         transparent
         animationType="slide"
-        onRequestClose={() => setShowCategoryPicker(false)}
+        onRequestClose={() => {
+          setShowCategoryPicker(false);
+          setFocusedField(null);
+        }}
       >
         <TouchableOpacity 
           style={styles.modalOverlay}
           activeOpacity={1}
-          onPress={() => setShowCategoryPicker(false)}
+          onPress={() => {
+            setShowCategoryPicker(false);
+            setFocusedField(null);
+          }}
         >
           <TouchableWithoutFeedback onPress={() => {}} accessible={false}>
             <View style={styles.modalContent}>
@@ -552,8 +745,9 @@ export default function EditProductScreen() {
               
               {categories.length === 0 ? (
                 <View style={styles.emptyCategoriesContainer}>
+                  <GridIcon color={colors.textMuted} />
                   <Text style={styles.emptyCategoriesText}>No categories available</Text>
-                  <TouchableOpacity style={styles.retryButton} onPress={loadCategories}>
+                  <TouchableOpacity style={styles.retryButton} onPress={loadCategories} activeOpacity={0.7}>
                     <Text style={styles.retryButtonText}>Retry</Text>
                   </TouchableOpacity>
                 </View>
@@ -562,6 +756,7 @@ export default function EditProductScreen() {
                   data={categories}
                   keyExtractor={(item) => item}
                   style={styles.categoryList}
+                  showsVerticalScrollIndicator={false}
                   renderItem={({ item }) => (
                     <TouchableOpacity
                       style={[
@@ -569,6 +764,7 @@ export default function EditProductScreen() {
                         selectedCategory === item && styles.categoryItemSelected
                       ]}
                       onPress={() => handleCategorySelect(item)}
+                      activeOpacity={0.7}
                     >
                       <Text style={[
                         styles.categoryItemText,
@@ -577,7 +773,9 @@ export default function EditProductScreen() {
                         {item}
                       </Text>
                       {selectedCategory === item && (
-                        <Text style={styles.checkmark}>✓</Text>
+                        <View style={styles.checkmarkContainer}>
+                          <CheckIcon />
+                        </View>
                       )}
                     </TouchableOpacity>
                   )}
@@ -586,7 +784,11 @@ export default function EditProductScreen() {
               
               <TouchableOpacity 
                 style={styles.modalCancelBtn}
-                onPress={() => setShowCategoryPicker(false)}
+                onPress={() => {
+                  setShowCategoryPicker(false);
+                  setFocusedField(null);
+                }}
+                activeOpacity={0.7}
               >
                 <Text style={styles.modalCancelText}>Cancel</Text>
               </TouchableOpacity>
@@ -594,14 +796,17 @@ export default function EditProductScreen() {
           </TouchableWithoutFeedback>
         </TouchableOpacity>
       </Modal>
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surface,
+  },
+  safeArea: {
+    flex: 1,
   },
   keyboardView: {
     flex: 1,
@@ -610,30 +815,61 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: spacing.lg,
+    paddingTop: spacing.md,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F9FAFB',
+    backgroundColor: colors.surface,
   },
   loadingText: {
-    marginTop: 12,
-    color: '#6B7280',
+    color: colors.textMuted,
     fontSize: 14,
+    fontWeight: '500',
+    marginTop: spacing.md,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.xl,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.cardBg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  headerText: {
+    flex: 1,
+  },
+  title: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    letterSpacing: -0.3,
+    marginBottom: 2,
+  },
+  subtitle: {
+    fontSize: 14,
+    color: colors.textMuted,
   },
   imagePicker: {
     width: '100%',
-    height: 220,
-    backgroundColor: '#fff',
-    borderRadius: 16,
+    height: 200,
+    backgroundColor: colors.cardBg,
+    borderRadius: borderRadius.lg,
     borderWidth: 2,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
     borderStyle: 'dashed',
     overflow: 'hidden',
-    marginBottom: 24,
+    marginBottom: spacing.xl,
   },
   imagePickerContent: {
     flex: 1,
@@ -643,23 +879,20 @@ const styles = StyleSheet.create({
   imageIconContainer: {
     width: 64,
     height: 64,
-    borderRadius: 32,
-    backgroundColor: '#F3F4F6',
+    borderRadius: borderRadius.lg,
+    backgroundColor: colors.purpleLight,
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 12,
-  },
-  imagePickerIcon: {
-    fontSize: 28,
+    marginBottom: spacing.md,
   },
   imagePickerText: {
-    color: '#374151',
+    color: colors.textPrimary,
     fontSize: 16,
     fontWeight: '600',
     marginBottom: 4,
   },
   imagePickerSubtext: {
-    color: '#9CA3AF',
+    color: colors.textMuted,
     fontSize: 13,
   },
   selectedImageContainer: {
@@ -675,73 +908,126 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(0,0,0,0.6)',
-    paddingVertical: 12,
+    flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    gap: spacing.sm,
   },
   changeImageText: {
-    color: '#fff',
+    color: colors.textOnPurple,
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '500',
+  },
+  newImageBadge: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    backgroundColor: colors.purple,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.xs,
+    borderRadius: borderRadius.sm,
+  },
+  newImageBadgeText: {
+    color: colors.textOnPurple,
+    fontSize: 10,
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
   section: {
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.03,
-    shadowRadius: 4,
-    elevation: 1,
+    backgroundColor: colors.cardBg,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    ...shadows.sm,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  sectionIconContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.purpleLight,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+  },
+  sectionIconDanger: {
+    backgroundColor: colors.dangerLight,
   },
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#111827',
-    marginBottom: 16,
+    color: colors.textPrimary,
   },
   inputContainer: {
-    marginBottom: 16,
+    marginBottom: spacing.lg,
   },
   label: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
-    color: '#374151',
-    marginBottom: 8,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
   },
   required: {
-    color: '#EF4444',
+    color: colors.danger,
   },
   optionalTag: {
-    color: '#6B7280',
+    color: colors.textMuted,
     fontWeight: '400',
+    fontSize: 11,
+  },
+  inputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.inputBg,
+    borderWidth: 1.5,
+    borderColor: colors.inputBorder,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+  },
+  inputWrapperFocused: {
+    borderColor: colors.purple,
+    backgroundColor: colors.purpleSubtle,
+  },
+  inputWrapperError: {
+    borderColor: colors.danger,
+  },
+  inputWrapperMultiline: {
+    alignItems: 'flex-start',
   },
   input: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#111827',
+    flex: 1,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    fontSize: 15,
+    color: colors.textPrimary,
+    fontWeight: '400',
   },
   multilineInput: {
     height: 100,
-    textAlignVertical: 'top',
+    paddingTop: spacing.md,
   },
-  inputError: {
-    borderColor: '#EF4444',
+  errorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    gap: spacing.xs,
   },
   errorText: {
-    color: '#EF4444',
+    color: colors.danger,
     fontSize: 12,
-    marginTop: 4,
+    fontWeight: '500',
   },
   row: {
     flexDirection: 'row',
-    gap: 12,
+    gap: spacing.md,
   },
   halfWidth: {
     flex: 1,
@@ -749,90 +1035,93 @@ const styles = StyleSheet.create({
   thirdWidth: {
     flex: 1,
   },
-  // Picker styles
   pickerButton: {
-    backgroundColor: '#F9FAFB',
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 14,
+    backgroundColor: colors.inputBg,
+    borderWidth: 1.5,
+    borderColor: colors.inputBorder,
+    borderRadius: borderRadius.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
+  pickerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.sm,
+  },
   pickerButtonText: {
-    fontSize: 16,
-    color: '#111827',
+    fontSize: 15,
+    color: colors.textPrimary,
+    fontWeight: '400',
   },
   pickerPlaceholder: {
-    color: '#9CA3AF',
+    color: colors.inputPlaceholder,
   },
-  pickerArrow: {
-    fontSize: 12,
-    color: '#6B7280',
+  actionsContainer: {
+    marginTop: spacing.sm,
+    gap: spacing.md,
   },
   submitButton: {
-    backgroundColor: '#4F46E5',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: colors.purple,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.lg,
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    shadowColor: '#4F46E5',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 4,
+    justifyContent: 'center',
+    gap: spacing.sm,
+    ...shadows.lg,
   },
   submitButtonDisabled: {
-    opacity: 0.7,
+    backgroundColor: colors.purpleMuted,
   },
   submitButtonText: {
-    color: '#fff',
+    color: colors.textOnPurple,
     fontSize: 16,
     fontWeight: '600',
   },
   cancelButton: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    paddingVertical: 16,
+    backgroundColor: colors.cardBg,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
     alignItems: 'center',
-    marginTop: 12,
     borderWidth: 1,
-    borderColor: '#E5E7EB',
+    borderColor: colors.border,
   },
   cancelButtonText: {
-    color: '#6B7280',
-    fontSize: 16,
+    color: colors.textSecondary,
+    fontSize: 15,
     fontWeight: '600',
   },
   // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: colors.overlay,
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
+    backgroundColor: colors.background,
+    borderTopLeftRadius: borderRadius.xl,
+    borderTopRightRadius: borderRadius.xl,
+    padding: spacing.lg,
     paddingBottom: 40,
     maxHeight: '70%',
   },
   modalHandle: {
     width: 40,
     height: 4,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.gray300,
     borderRadius: 2,
     alignSelf: 'center',
-    marginBottom: 20,
+    marginBottom: spacing.lg,
   },
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
-    marginBottom: 16,
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
     textAlign: 'center',
   },
   categoryList: {
@@ -842,58 +1131,66 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 10,
-    marginBottom: 8,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   categoryItemSelected: {
-    backgroundColor: '#EEF2FF',
-    borderWidth: 1,
-    borderColor: '#4F46E5',
+    backgroundColor: colors.purpleLight,
+    borderColor: colors.purple,
   },
   categoryItemText: {
-    fontSize: 16,
-    color: '#374151',
+    fontSize: 15,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
   categoryItemTextSelected: {
-    color: '#4F46E5',
+    color: colors.purple,
     fontWeight: '600',
   },
-  checkmark: {
-    fontSize: 18,
-    color: '#4F46E5',
-    fontWeight: '600',
+  checkmarkContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.purpleSubtle,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   emptyCategoriesContainer: {
     alignItems: 'center',
-    padding: 20,
+    padding: spacing.xxxl,
+    gap: spacing.md,
   },
   emptyCategoriesText: {
-    fontSize: 16,
-    color: '#6B7280',
-    marginBottom: 12,
+    fontSize: 15,
+    color: colors.textMuted,
   },
   retryButton: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    backgroundColor: '#4F46E5',
-    borderRadius: 8,
+    paddingHorizontal: spacing.xl,
+    paddingVertical: spacing.md,
+    backgroundColor: colors.purple,
+    borderRadius: borderRadius.md,
   },
   retryButtonText: {
-    color: '#fff',
+    color: colors.textOnPurple,
     fontWeight: '600',
+    fontSize: 14,
   },
   modalCancelBtn: {
-    padding: 16,
+    padding: spacing.md,
     alignItems: 'center',
-    marginTop: 12,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
+    marginTop: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modalCancelText: {
-    fontSize: 16,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#6B7280',
+    color: colors.textSecondary,
   },
 });
