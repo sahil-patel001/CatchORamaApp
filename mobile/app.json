@@ -20,7 +20,8 @@
       "bundleIdentifier": "com.catchorama.admin",
       "infoPlist": {
         "NSCameraUsageDescription": "Allow CatchORama to access your camera to take product photos.",
-        "NSPhotoLibraryUsageDescription": "Allow CatchORama to access your photos to select product images."
+        "NSPhotoLibraryUsageDescription": "Allow CatchORama to access your photos to select product images.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
@@ -32,7 +33,8 @@
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.READ_EXTERNAL_STORAGE",
-        "android.permission.WRITE_EXTERNAL_STORAGE"
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.RECORD_AUDIO"
       ]
     },
     "web": {
@@ -53,6 +55,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "16a7935e-8c5a-4caa-b671-f3254fc695f4"
+      }
     }
   }
 }

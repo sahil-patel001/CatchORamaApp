@@ -1,0 +1,21 @@
+{
+  "cli": {
+    "version": ">= 9.0.0"
+  },
+  "build": {
+    "preview": {
+      "distribution": "internal",
+      "ios": {},
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "production": {
+      "distribution": "store",
+      "ios": {},
+      "android": {
+        "buildType": "app-bundle"
+      }
+    }
+  }
+}
