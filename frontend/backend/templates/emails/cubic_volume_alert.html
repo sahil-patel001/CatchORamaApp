@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{title}}</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #ffffff;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+            color: white;
+            padding: 30px 20px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 24px;
+            font-weight: 600;
+        }
+        .content {
+            padding: 30px 20px;
+        }
+        .warning-box {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #dc3545;
+        }
+        .warning-icon {
+            font-size: 24px;
+            margin-right: 10px;
+        }
+        .product-details {
+            background-color: #f8f9fa;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .product-details h3 {
+            margin: 0 0 15px 0;
+            color: #2c3e50;
+            font-size: 18px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e9ecef;
+        }
+        .detail-row:last-child {
+            border-bottom: none;
+        }
+        .detail-label {
+            font-weight: 600;
+            color: #6c757d;
+        }
+        .detail-value {
+            color: #2c3e50;
+        }
+        .weight-warning {
+            color: #dc3545;
+            font-weight: 700;
+            font-size: 18px;
+        }
+        .vendor-info {
+            background-color: #e7f3ff;
+            border: 1px solid #b3d9ff;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            margin: 20px 0;
+            transition: transform 0.2s ease;
+        }
+        .button:hover {
+            transform: translateY(-1px);
+        }
+        .footer {
+            background-color: #f8f9fa;
+            padding: 20px;
+            text-align: center;
+            border-top: 1px solid #e9ecef;
+        }
+        .footer p {
+            margin: 5px 0;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #dc3545;
+            text-decoration: none;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .content {
+                padding: 20px 15px;
+            }
+            .detail-row {
+                flex-direction: column;
+                gap: 5px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ Cubic Volume Alert</h1>
+            <p>Product exceeds shipping weight threshold</p>
+        </div>
+        
+        <div class="content">
+            <div class="warning-box">
+                <span class="warning-icon">📦</span>
+                <strong>High Volume Alert:</strong> A product has been added that exceeds the cubic weight threshold and may require special shipping arrangements.
+            </div>
+            
+            <p>Hello Admin,</p>
+            <p>{{message}}</p>
+            
+            <div class="product-details">
+                <h3>Product Information</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Product Name:</span>
+                    <span class="detail-value">{{metadata.productName}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Calculated Cubic Weight:</span>
+                    <span class="detail-value weight-warning">{{metadata.cubicWeight}} kg</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Threshold Limit:</span>
+                    <span class="detail-value">{{metadata.thresholdKg}} kg</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Dimensions (L×W×H):</span>
+                    <span class="detail-value">{{metadata.dimensions}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Status:</span>
+                    <span class="detail-value" style="color: #dc3545; font-weight: 600;">⚠️ Exceeds Threshold</span>
+                </div>
+            </div>
+            
+            <div class="vendor-info">
+                <h4 style="margin: 0 0 10px 0; color: #0066cc;">Vendor Information</h4>
+                <div class="detail-row" style="border: none; padding: 4px 0;">
+                    <span class="detail-label">Vendor Name:</span>
+                    <span class="detail-value">{{metadata.vendorName}}</span>
+                </div>
+                <div class="detail-row" style="border: none; padding: 4px 0;">
+                    <span class="detail-label">Vendor Email:</span>
+                    <span class="detail-value">{{metadata.vendorEmail}}</span>
+                </div>
+            </div>
+            
+            <p><strong>Recommended Actions:</strong></p>
+            <ul>
+                <li>Review the product dimensions and verify calculations</li>
+                <li>Contact the vendor to confirm product specifications</li>
+                <li>Assess special shipping requirements and costs</li>
+                <li>Consider updating shipping policies if necessary</li>
+                <li>Evaluate if product should be flagged for special handling</li>
+            </ul>
+            
+            <div style="text-align: center;">
+                <a href="{{metadata.actionUrl}}" class="button">
+                    Review Product Details
+                </a>
+            </div>
+            
+            <p><strong>Note:</strong> Products exceeding the cubic weight threshold may incur additional shipping costs or require special handling arrangements.</p>
+            
+            <p><em>Alert generated on {{date}} based on cubic weight calculation: (Length × Width × Height) ÷ 6000</em></p>
+        </div>
+        
+        <div class="footer">
+            <p>© {{year}} {{companyName}}. All rights reserved.</p>
+            <p>
+                Need help? Contact us at <a href="mailto:{{supportEmail}}">{{supportEmail}}</a>
+            </p>
+            {{#if companyAddress}}
+            <p>{{companyAddress}}</p>
+            {{/if}}
+            <p style="font-size: 12px; color: #adb5bd;">
+                You're receiving this email because you have cubic volume notifications enabled for admin alerts.
+            </p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,2557 @@
+{
+  "info": {
+    "name": "Product Ecosystem API Collection",
+    "description": "Complete API collection for the Product Ecosystem backend. This collection includes all endpoints for authentication, user management, vendor operations, product management, order processing, and more.",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{authToken}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Auto-set auth token if available",
+          "if (pm.environment.get('authToken')) {",
+          "    pm.request.headers.add({",
+          "        key: 'Authorization',",
+          "        value: 'Bearer ' + pm.environment.get('authToken')",
+          "    });",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000",
+      "type": "string"
+    },
+    {
+      "key": "apiVersion",
+      "value": "v1",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "🔐 Authentication",
+      "item": [
+        {
+          "name": "Register User",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"SecurePassword123!\",\n  \"role\": \"vendor\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "register"]
+            },
+            "description": "Register a new user account. Role can be 'vendor' or 'superadmin'."
+          }
+        },
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Extract and save auth token",
+                  "if (pm.response.code === 200) {",
+                  "    const responseJson = pm.response.json();",
+                  "    if (responseJson.token) {",
+                  "        pm.environment.set('authToken', responseJson.token);",
+                  "        pm.environment.set('userId', responseJson.user.id);",
+                  "        pm.environment.set('userRole', responseJson.user.role);",
+                  "    }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"SecurePassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "login"]
+            },
+            "description": "Login with email and password. Returns JWT token for authentication."
+          }
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/me",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "me"]
+            },
+            "description": "Get current authenticated user information."
+          }
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"your_refresh_token_here\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/refresh",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "refresh"]
+            },
+            "description": "Refresh authentication token."
+          }
+        },
+        {
+          "name": "Change Password",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"OldPassword123!\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/change-password",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "change-password"]
+            },
+            "description": "Change user password (requires current password)."
+          }
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/logout",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "logout"]
+            },
+            "description": "Logout current user and invalidate token."
+          }
+        },
+        {
+          "name": "Google OAuth Login",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/auth/google",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "auth", "google"]
+            },
+            "description": "Initiate Google OAuth login flow."
+          }
+        }
+      ],
+      "description": "Authentication endpoints for user registration, login, and token management."
+    },
+    {
+      "name": "👥 Users",
+      "item": [
+        {
+          "name": "Get All Users (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get all users with pagination (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get User by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "users", "{{userId}}"]
+            },
+            "description": "Get specific user by ID."
+          }
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "users", "profile"]
+            },
+            "description": "Get current user's profile information."
+          }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Name\",\n  \"email\": \"updated@example.com\",\n  \"phone\": \"+1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "users", "profile"]
+            },
+            "description": "Update current user's profile."
+          }
+        },
+        {
+          "name": "Update User (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated User Name\",\n  \"email\": \"updated@example.com\",\n  \"role\": \"vendor\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "users", "{{userId}}"]
+            },
+            "description": "Update user information (Admin only)."
+          }
+        },
+        {
+          "name": "Activate User (Admin)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/{{userId}}/activate",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "users",
+                "{{userId}}",
+                "activate"
+              ]
+            },
+            "description": "Activate/deactivate user account (Super Admin only)."
+          }
+        },
+        {
+          "name": "Delete User (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "users", "{{userId}}"]
+            },
+            "description": "Delete user account (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get User Stats (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "users", "stats"]
+            },
+            "description": "Get user statistics (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get User Notification Preferences",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/{{userId}}/preferences",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "users",
+                "{{userId}}",
+                "preferences"
+              ]
+            },
+            "description": "Get user notification preferences."
+          }
+        },
+        {
+          "name": "Update User Notification Preferences",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"emailNotifications\": true,\n  \"smsNotifications\": false,\n  \"lowStockAlerts\": true,\n  \"orderUpdates\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/users/{{userId}}/preferences",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "users",
+                "{{userId}}",
+                "preferences"
+              ]
+            },
+            "description": "Update user notification preferences."
+          }
+        }
+      ],
+      "description": "User management endpoints for profile operations and admin functions."
+    },
+    {
+      "name": "🏢 Vendors",
+      "item": [
+        {
+          "name": "Get All Vendors (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/vendors?page=1&limit=10&search=vendor name",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "vendors"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "search",
+                  "value": "vendor name"
+                }
+              ]
+            },
+            "description": "Get all vendors with pagination and search (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get Vendor by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/vendors/{{vendorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "vendors", "{{vendorId}}"]
+            },
+            "description": "Get specific vendor by ID."
+          }
+        },
+        {
+          "name": "Create Vendor (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Vendor Company\",\n  \"email\": \"vendor@company.com\",\n  \"phone\": \"+1234567890\",\n  \"address\": \"123 Business St, City, State 12345\",\n  \"contactPerson\": \"John Smith\",\n  \"businessRegistration\": \"BR123456789\",\n  \"taxId\": \"TX987654321\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/vendors",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "vendors"]
+            },
+            "description": "Create new vendor (Super Admin only)."
+          }
+        },
+        {
+          "name": "Update Vendor",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Vendor Name\",\n  \"email\": \"updated@vendor.com\",\n  \"phone\": \"+1234567890\",\n  \"address\": \"Updated Address\",\n  \"contactPerson\": \"Updated Contact Person\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/vendors/{{vendorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "vendors", "{{vendorId}}"]
+            },
+            "description": "Update vendor information."
+          }
+        },
+        {
+          "name": "Delete Vendor (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/vendors/{{vendorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "vendors", "{{vendorId}}"]
+            },
+            "description": "Delete vendor (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get Vendor Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/vendors/{{vendorId}}/stats",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "vendors",
+                "{{vendorId}}",
+                "stats"
+              ]
+            },
+            "description": "Get vendor statistics and performance metrics."
+          }
+        },
+        {
+          "name": "Get Vendor Settings",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/vendors/{{vendorId}}/settings",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "vendors",
+                "{{vendorId}}",
+                "settings"
+              ]
+            },
+            "description": "Get vendor settings and preferences."
+          }
+        },
+        {
+          "name": "Update Vendor Settings",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lowStockThreshold\": 10,\n  \"autoReorderEnabled\": true,\n  \"notificationPreferences\": {\n    \"email\": true,\n    \"sms\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/vendors/{{vendorId}}/settings",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "vendors",
+                "{{vendorId}}",
+                "settings"
+              ]
+            },
+            "description": "Update vendor settings and preferences."
+          }
+        },
+        {
+          "name": "Get Vendor Invoice Prefix",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/vendors/{{vendorId}}/invoice-prefix",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "vendors",
+                "{{vendorId}}",
+                "invoice-prefix"
+              ]
+            },
+            "description": "Get vendor's invoice prefix."
+          }
+        },
+        {
+          "name": "Set Vendor Invoice Prefix (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoicePrefix\": \"VND-001\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/vendors/{{vendorId}}/invoice-prefix",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "vendors",
+                "{{vendorId}}",
+                "invoice-prefix"
+              ]
+            },
+            "description": "Set vendor's invoice prefix (Super Admin only)."
+          }
+        }
+      ],
+      "description": "Vendor management endpoints for vendor operations and settings."
+    },
+    {
+      "name": "📦 Products",
+      "item": [
+        {
+          "name": "Get All Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products?page=1&limit=10&category=electronics&vendor={{vendorId}}&inStock=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "products"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "category",
+                  "value": "electronics"
+                },
+                {
+                  "key": "vendor",
+                  "value": "{{vendorId}}"
+                },
+                {
+                  "key": "inStock",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get all products with filtering and pagination."
+          }
+        },
+        {
+          "name": "Search Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products/search?q=smartphone&category=electronics&minPrice=100&maxPrice=1000",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "products", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "smartphone"
+                },
+                {
+                  "key": "category",
+                  "value": "electronics"
+                },
+                {
+                  "key": "minPrice",
+                  "value": "100"
+                },
+                {
+                  "key": "maxPrice",
+                  "value": "1000"
+                }
+              ]
+            },
+            "description": "Search products by name, description, and filters."
+          }
+        },
+        {
+          "name": "Get Product Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "products", "categories"]
+            },
+            "description": "Get all product categories."
+          }
+        },
+        {
+          "name": "Get Low Stock Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products/low-stock?threshold=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "products", "low-stock"],
+              "query": [
+                {
+                  "key": "threshold",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Get products with low stock levels."
+          }
+        },
+        {
+          "name": "Get Archived Products",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products/archived",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "products", "archived"]
+            },
+            "description": "Get all archived products."
+          }
+        },
+        {
+          "name": "Get Product by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "products", "{{productId}}"]
+            },
+            "description": "Get specific product by ID."
+          }
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Smartphone\",\n  \"description\": \"Latest model smartphone with advanced features\",\n  \"price\": 699.99,\n  \"costPrice\": 450.00,\n  \"category\": \"electronics\",\n  \"vendor\": \"{{vendorId}}\",\n  \"stock\": 50,\n  \"minStock\": 10,\n  \"sku\": \"SM-001\",\n  \"barcode\": \"1234567890123\",\n  \"dimensions\": {\n    \"length\": 15.5,\n    \"width\": 7.5,\n    \"height\": 0.8,\n    \"weight\": 0.18\n  },\n  \"specifications\": {\n    \"brand\": \"TechBrand\",\n    \"model\": \"X-Pro\",\n    \"color\": \"Black\"\n  },\n  \"tags\": [\"smartphone\", \"electronics\", \"mobile\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "products"]
+            },
+            "description": "Create new product (Admin/Vendor only)."
+          }
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Smartphone\",\n  \"description\": \"Updated description\",\n  \"price\": 649.99,\n  \"stock\": 45,\n  \"specifications\": {\n    \"brand\": \"TechBrand\",\n    \"model\": \"X-Pro Updated\",\n    \"color\": \"Silver\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "products", "{{productId}}"]
+            },
+            "description": "Update product information (Admin/Vendor only)."
+          }
+        },
+        {
+          "name": "Update Product Stock",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stock\": 75,\n  \"operation\": \"set\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products/{{productId}}/stock",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "products",
+                "{{productId}}",
+                "stock"
+              ]
+            },
+            "description": "Update product stock levels (Admin/Vendor only)."
+          }
+        },
+        {
+          "name": "Archive Product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products/{{productId}}/archive",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "products",
+                "{{productId}}",
+                "archive"
+              ]
+            },
+            "description": "Archive product (Admin/Vendor only)."
+          }
+        },
+        {
+          "name": "Unarchive Product",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products/{{productId}}/unarchive",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "products",
+                "{{productId}}",
+                "unarchive"
+              ]
+            },
+            "description": "Unarchive product (Admin/Vendor only)."
+          }
+        },
+        {
+          "name": "Check Product Order Linkage",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products/{{productId}}/order-linkage",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "products",
+                "{{productId}}",
+                "order-linkage"
+              ]
+            },
+            "description": "Check if product has any order linkages before deletion."
+          }
+        },
+        {
+          "name": "Delete Product",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/products/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "products", "{{productId}}"]
+            },
+            "description": "Delete product (Admin/Vendor only)."
+          }
+        }
+      ],
+      "description": "Product management endpoints for inventory operations."
+    },
+    {
+      "name": "🛒 Orders",
+      "item": [
+        {
+          "name": "Get All Orders",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders?page=1&limit=10&status=pending&vendor={{vendorId}}&startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "orders"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "vendor",
+                  "value": "{{vendorId}}"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31"
+                }
+              ]
+            },
+            "description": "Get all orders with filtering and pagination."
+          }
+        },
+        {
+          "name": "Get Order by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "orders", "{{orderId}}"]
+            },
+            "description": "Get specific order by ID."
+          }
+        },
+        {
+          "name": "Create Order",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": {\n    \"name\": \"John Customer\",\n    \"email\": \"customer@example.com\",\n    \"phone\": \"+1234567890\",\n    \"address\": {\n      \"street\": \"123 Customer St\",\n      \"city\": \"Customer City\",\n      \"state\": \"CS\",\n      \"zipCode\": \"12345\",\n      \"country\": \"USA\"\n    }\n  },\n  \"items\": [\n    {\n      \"product\": \"{{productId}}\",\n      \"quantity\": 2,\n      \"price\": 699.99\n    }\n  ],\n  \"shippingMethod\": \"standard\",\n  \"paymentMethod\": \"credit_card\",\n  \"notes\": \"Please handle with care\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "orders"]
+            },
+            "description": "Create new order (Admin/Vendor only)."
+          }
+        },
+        {
+          "name": "Update Order",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": {\n    \"name\": \"Updated Customer Name\",\n    \"phone\": \"+1234567891\"\n  },\n  \"items\": [\n    {\n      \"product\": \"{{productId}}\",\n      \"quantity\": 3,\n      \"price\": 699.99\n    }\n  ],\n  \"notes\": \"Updated order notes\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "orders", "{{orderId}}"]
+            },
+            "description": "Update order information (Admin/Vendor only)."
+          }
+        },
+        {
+          "name": "Update Order Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"shipped\",\n  \"statusNote\": \"Order has been shipped via FedEx\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders/{{orderId}}/status",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "orders",
+                "{{orderId}}",
+                "status"
+              ]
+            },
+            "description": "Update order status (Admin/Vendor only)."
+          }
+        },
+        {
+          "name": "Add Tracking Information",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"trackingNumber\": \"1Z999AA1234567890\",\n  \"carrier\": \"FedEx\",\n  \"trackingUrl\": \"https://www.fedex.com/apps/fedextrack/?tracknumbers=1Z999AA1234567890\",\n  \"estimatedDelivery\": \"2024-02-15T10:00:00Z\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders/{{orderId}}/tracking",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "orders",
+                "{{orderId}}",
+                "tracking"
+              ]
+            },
+            "description": "Add tracking information to order (Admin/Vendor only)."
+          }
+        },
+        {
+          "name": "Delete Order",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/orders/{{orderId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "orders", "{{orderId}}"]
+            },
+            "description": "Delete order (Admin/Vendor only)."
+          }
+        }
+      ],
+      "description": "Order management endpoints for processing customer orders."
+    },
+    {
+      "name": "📊 Dashboard",
+      "item": [
+        {
+          "name": "Get Admin Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/admin",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "dashboard", "admin"]
+            },
+            "description": "Get admin dashboard data with system-wide metrics (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get Vendor Dashboard",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/dashboard/vendor",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "dashboard", "vendor"]
+            },
+            "description": "Get vendor dashboard data with vendor-specific metrics (Vendor only)."
+          }
+        }
+      ],
+      "description": "Dashboard endpoints for analytics and key metrics."
+    },
+    {
+      "name": "📂 Categories",
+      "item": [
+        {
+          "name": "Get All Categories",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "categories"]
+            },
+            "description": "Get all product categories."
+          }
+        },
+        {
+          "name": "Create Category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"New Category\",\n  \"description\": \"Description of the new category\",\n  \"parentCategory\": null,\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/categories",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "categories"]
+            },
+            "description": "Create new category (Admin/Vendor only)."
+          }
+        },
+        {
+          "name": "Update Category",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Updated Category Name\",\n  \"description\": \"Updated category description\",\n  \"isActive\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "categories", "{{categoryId}}"]
+            },
+            "description": "Update category information (Admin/Vendor only)."
+          }
+        },
+        {
+          "name": "Delete Category",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/categories/{{categoryId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "categories", "{{categoryId}}"]
+            },
+            "description": "Delete category (Admin/Vendor only)."
+          }
+        }
+      ],
+      "description": "Category management endpoints for organizing products."
+    },
+    {
+      "name": "📈 Reports",
+      "item": [
+        {
+          "name": "Get Sales Report",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/reports/sales?startDate=2024-01-01&endDate=2024-12-31&vendor={{vendorId}}&groupBy=month",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "reports", "sales"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31"
+                },
+                {
+                  "key": "vendor",
+                  "value": "{{vendorId}}"
+                },
+                {
+                  "key": "groupBy",
+                  "value": "month"
+                }
+              ]
+            },
+            "description": "Get sales report with date range and grouping options."
+          }
+        },
+        {
+          "name": "Get Commission Report (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/reports/commission?startDate=2024-01-01&endDate=2024-12-31&vendor={{vendorId}}&status=pending",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "reports", "commission"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31"
+                },
+                {
+                  "key": "vendor",
+                  "value": "{{vendorId}}"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                }
+              ]
+            },
+            "description": "Get commission report (Super Admin only)."
+          }
+        }
+      ],
+      "description": "Reporting endpoints for sales and commission analytics."
+    },
+    {
+      "name": "💰 Commissions",
+      "item": [
+        {
+          "name": "Get All Commissions (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/commissions?page=1&limit=10&status=pending&vendor={{vendorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "commissions"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "vendor",
+                  "value": "{{vendorId}}"
+                }
+              ]
+            },
+            "description": "Get all commissions with filtering (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get Vendor Commissions",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/commissions/vendor?status=approved&startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "commissions", "vendor"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "approved"
+                },
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31"
+                }
+              ]
+            },
+            "description": "Get commissions for current vendor (Vendor only)."
+          }
+        },
+        {
+          "name": "Get Commission by ID (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/commissions/{{commissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "commissions",
+                "{{commissionId}}"
+              ]
+            },
+            "description": "Get specific commission by ID (Super Admin only)."
+          }
+        },
+        {
+          "name": "Generate Commission (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"order\": \"{{orderId}}\",\n  \"vendor\": \"{{vendorId}}\",\n  \"commissionRate\": 0.15,\n  \"baseAmount\": 1000.00,\n  \"notes\": \"Commission for Q1 sales\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/commissions/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "commissions", "generate"]
+            },
+            "description": "Generate commission for an order (Super Admin only)."
+          }
+        },
+        {
+          "name": "Bulk Generate Commissions (Admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"orders\": [\"{{orderId1}}\", \"{{orderId2}}\"],\n  \"commissionRate\": 0.15,\n  \"notes\": \"Bulk commission generation for Q1\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/commissions/bulk-generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "commissions", "bulk-generate"]
+            },
+            "description": "Generate commissions for multiple orders (Super Admin only)."
+          }
+        },
+        {
+          "name": "Approve Commission (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"approvalNotes\": \"Commission approved for payment\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/commissions/{{commissionId}}/approve",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "commissions",
+                "{{commissionId}}",
+                "approve"
+              ]
+            },
+            "description": "Approve commission for payment (Super Admin only)."
+          }
+        },
+        {
+          "name": "Mark Commission as Paid (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"paymentMethod\": \"bank_transfer\",\n  \"transactionId\": \"TXN123456789\",\n  \"paymentNotes\": \"Paid via bank transfer\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/commissions/{{commissionId}}/pay",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "commissions",
+                "{{commissionId}}",
+                "pay"
+              ]
+            },
+            "description": "Mark commission as paid (Super Admin only)."
+          }
+        },
+        {
+          "name": "Dispute Commission (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"disputeReason\": \"Incorrect commission calculation\",\n  \"disputeNotes\": \"Commission rate should be 12% not 15%\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/commissions/{{commissionId}}/dispute",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "commissions",
+                "{{commissionId}}",
+                "dispute"
+              ]
+            },
+            "description": "Dispute commission (Super Admin only)."
+          }
+        },
+        {
+          "name": "Update Commission (Admin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"commissionRate\": 0.12,\n  \"baseAmount\": 950.00,\n  \"notes\": \"Updated commission rate as per agreement\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/commissions/{{commissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "commissions",
+                "{{commissionId}}"
+              ]
+            },
+            "description": "Update commission details (Super Admin only)."
+          }
+        },
+        {
+          "name": "Delete Commission (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/commissions/{{commissionId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "commissions",
+                "{{commissionId}}"
+              ]
+            },
+            "description": "Delete commission (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get Commission Stats (Admin)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/commissions/stats?startDate=2024-01-01&endDate=2024-12-31",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "commissions", "stats"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2024-01-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2024-12-31"
+                }
+              ]
+            },
+            "description": "Get commission statistics (Super Admin only)."
+          }
+        }
+      ],
+      "description": "Commission management endpoints for vendor payouts."
+    },
+    {
+      "name": "🔔 Notifications",
+      "item": [
+        {
+          "name": "Get All Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications?page=1&limit=10&type=order&status=unread",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "notifications"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "type",
+                  "value": "order"
+                },
+                {
+                  "key": "status",
+                  "value": "unread"
+                }
+              ]
+            },
+            "description": "Get all notifications with filtering and pagination."
+          }
+        },
+        {
+          "name": "Get Unread Notifications",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications/unread",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "notifications", "unread"]
+            },
+            "description": "Get all unread notifications for current user."
+          }
+        },
+        {
+          "name": "Get Notification Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "notifications", "stats"]
+            },
+            "description": "Get notification statistics for current user."
+          }
+        },
+        {
+          "name": "Get Notification by ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications/{{notificationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "notifications",
+                "{{notificationId}}"
+              ]
+            },
+            "description": "Get specific notification by ID."
+          }
+        },
+        {
+          "name": "Create Notification",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"New Order Notification\",\n  \"message\": \"You have received a new order #12345\",\n  \"type\": \"order\",\n  \"priority\": \"high\",\n  \"recipients\": [\"{{userId}}\"],\n  \"data\": {\n    \"orderId\": \"{{orderId}}\",\n    \"orderNumber\": \"ORD-12345\"\n  },\n  \"channels\": [\"in-app\", \"email\"]\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "notifications"]
+            },
+            "description": "Create new notification."
+          }
+        },
+        {
+          "name": "Update Notification",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Updated Notification Title\",\n  \"message\": \"Updated notification message\",\n  \"priority\": \"medium\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications/{{notificationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "notifications",
+                "{{notificationId}}"
+              ]
+            },
+            "description": "Update notification information."
+          }
+        },
+        {
+          "name": "Mark Notification as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications/{{notificationId}}/read",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "notifications",
+                "{{notificationId}}",
+                "read"
+              ]
+            },
+            "description": "Mark specific notification as read."
+          }
+        },
+        {
+          "name": "Mark Notification as Unread",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications/{{notificationId}}/unread",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "notifications",
+                "{{notificationId}}",
+                "unread"
+              ]
+            },
+            "description": "Mark specific notification as unread."
+          }
+        },
+        {
+          "name": "Mark All Notifications as Read",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications/mark-all-read",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "notifications",
+                "mark-all-read"
+              ]
+            },
+            "description": "Mark all notifications as read for current user."
+          }
+        },
+        {
+          "name": "Bulk Notification Operations",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"operation\": \"mark_read\",\n  \"notificationIds\": [\"{{notificationId1}}\", \"{{notificationId2}}\"],\n  \"filters\": {\n    \"type\": \"order\",\n    \"priority\": \"low\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications/bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "notifications", "bulk"]
+            },
+            "description": "Perform bulk operations on notifications."
+          }
+        },
+        {
+          "name": "Delete Notification",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications/{{notificationId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "notifications",
+                "{{notificationId}}"
+              ]
+            },
+            "description": "Delete specific notification."
+          }
+        },
+        {
+          "name": "Cleanup Expired Notifications (Admin)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/notifications/cleanup?dryRun=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "notifications", "cleanup"],
+              "query": [
+                {
+                  "key": "dryRun",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Cleanup expired notifications (Super Admin only)."
+          }
+        }
+      ],
+      "description": "Notification management endpoints for real-time communication."
+    },
+    {
+      "name": "🏷️ Barcodes (Admin Only)",
+      "item": [
+        {
+          "name": "Get All Barcodes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes?page=1&limit=10&format=CODE128&vendor={{vendorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "barcodes"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                },
+                {
+                  "key": "format",
+                  "value": "CODE128"
+                },
+                {
+                  "key": "vendor",
+                  "value": "{{vendorId}}"
+                }
+              ]
+            },
+            "description": "Get all barcodes with pagination and filtering (Super Admin only)."
+          }
+        },
+        {
+          "name": "Search Barcodes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/search?q=123456&type=product&vendor={{vendorId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "barcodes", "search"],
+              "query": [
+                {
+                  "key": "q",
+                  "value": "123456"
+                },
+                {
+                  "key": "type",
+                  "value": "product"
+                },
+                {
+                  "key": "vendor",
+                  "value": "{{vendorId}}"
+                }
+              ]
+            },
+            "description": "Search barcodes by text, product, or vendor (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get Barcode Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/stats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "barcodes", "stats"]
+            },
+            "description": "Get barcode statistics and analytics (Super Admin only)."
+          }
+        },
+        {
+          "name": "Generate Product Barcode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productId\": \"{{productId}}\",\n  \"format\": \"CODE128\",\n  \"includeText\": true,\n  \"customCode\": null\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/generate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "barcodes", "generate"]
+            },
+            "description": "Generate barcode for a specific product (Super Admin only)."
+          }
+        },
+        {
+          "name": "Generate Bulk Barcodes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productIds\": [\"{{productId1}}\", \"{{productId2}}\"],\n  \"format\": \"CODE128\",\n  \"includeText\": true,\n  \"batchSize\": 10\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/generate-bulk",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "barcodes", "generate-bulk"]
+            },
+            "description": "Generate barcodes for multiple products (Super Admin only)."
+          }
+        },
+        {
+          "name": "Validate Barcode",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"barcode\": \"1234567890123\",\n  \"format\": \"CODE128\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/validate",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "barcodes", "validate"]
+            },
+            "description": "Validate barcode format (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get Product Barcode",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/product/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "barcodes",
+                "product",
+                "{{productId}}"
+              ]
+            },
+            "description": "Get barcode information for a specific product (Super Admin only)."
+          }
+        },
+        {
+          "name": "Update Product Barcode",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"barcode\": \"9876543210987\",\n  \"format\": \"CODE128\",\n  \"includeText\": true\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/product/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "barcodes",
+                "product",
+                "{{productId}}"
+              ]
+            },
+            "description": "Update barcode for a specific product (Super Admin only)."
+          }
+        },
+        {
+          "name": "Regenerate Product Barcode",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"format\": \"CODE128\",\n  \"includeText\": true,\n  \"reason\": \"Product information updated\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/regenerate/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "barcodes",
+                "regenerate",
+                "{{productId}}"
+              ]
+            },
+            "description": "Regenerate barcode for a product (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get Vendor Product Barcodes",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/vendor/{{vendorId}}?includeImages=true",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "barcodes",
+                "vendor",
+                "{{vendorId}}"
+              ],
+              "query": [
+                {
+                  "key": "includeImages",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Get all products with barcodes for a specific vendor (Super Admin only)."
+          }
+        },
+        {
+          "name": "Check Barcode Uniqueness",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"barcode\": \"1234567890123\",\n  \"excludeProductId\": \"{{productId}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/check-uniqueness",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "barcodes", "check-uniqueness"]
+            },
+            "description": "Check if barcode is unique in the system (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get Barcode Formats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/formats",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "barcodes", "formats"]
+            },
+            "description": "Get supported barcode formats and options (Super Admin only)."
+          }
+        },
+        {
+          "name": "Generate Barcode Image",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"barcode\": \"1234567890123\",\n  \"format\": \"CODE128\",\n  \"width\": 200,\n  \"height\": 100,\n  \"includeText\": true,\n  \"textSize\": 12\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/generate-image",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "barcodes", "generate-image"]
+            },
+            "description": "Generate barcode image for specific barcode text (Super Admin only)."
+          }
+        },
+        {
+          "name": "Get Product Barcode Image",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/image/{{productId}}?width=200&height=100&format=png",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "barcodes",
+                "image",
+                "{{productId}}"
+              ],
+              "query": [
+                {
+                  "key": "width",
+                  "value": "200"
+                },
+                {
+                  "key": "height",
+                  "value": "100"
+                },
+                {
+                  "key": "format",
+                  "value": "png"
+                }
+              ]
+            },
+            "description": "Get barcode image for an existing product (Super Admin only)."
+          }
+        },
+        {
+          "name": "Delete Product Barcode",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/product/{{productId}}",
+              "host": ["{{baseUrl}}"],
+              "path": [
+                "api",
+                "{{apiVersion}}",
+                "barcodes",
+                "product",
+                "{{productId}}"
+              ]
+            },
+            "description": "Delete barcode for a specific product (Super Admin only)."
+          }
+        },
+        {
+          "name": "Bulk Delete Barcodes",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{authToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"productIds\": [\"{{productId1}}\", \"{{productId2}}\"],\n  \"reason\": \"Bulk cleanup operation\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/{{apiVersion}}/barcodes/bulk-delete",
+              "host": ["{{baseUrl}}"],
+              "path": ["api", "{{apiVersion}}", "barcodes", "bulk-delete"]
+            },
+            "description": "Delete multiple barcodes (Super Admin only)."
+          }
+        }
+      ],
+      "description": "Barcode management endpoints for product identification (Super Admin only)."
+    },
+    {
+      "name": "🏥 System",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{baseUrl}}/health",
+              "host": ["{{baseUrl}}"],
+              "path": ["health"]
+            },
+            "description": "Check API health status and basic information."
+          }
+        }
+      ],
+      "description": "System health and status endpoints."
+    }
+  ]
+}

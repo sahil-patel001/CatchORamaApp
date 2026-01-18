@@ -1,0 +1,65 @@
+trigger:
+  branches:
+    include:
+      - main   # change this to your branch name
+  paths:
+    exclude:
+    - backend/**
+pool:
+  name: 'Default'   # self-hosted agent
+
+steps:
+
+
+# Step 1: Checkout code
+- checkout: self
+
+# - task: CmdLine@2
+#   displayName: 'Run script in a specific directory'
+#   inputs:
+#     script: |
+#       echo "Running from: %CD%"
+#       dir # List contents of the current directory
+#     workingDirectory: '$(System.DefaultWorkingDirectory)' # Sets the working directory for this task
+
+# Step 1.1: Replace .env files
+- task: DownloadSecureFile@1
+  name: environmentFile
+  inputs:
+    secureFile: 'ui-env-file'
+
+- script: |
+    copy /Y "$(environmentFile.secureFilePath)" ".env"
+  displayName: "Copy .env file from secure file"
+  workingDirectory: '$(System.DefaultWorkingDirectory)'
+
+# Step 2: Install dependencies (example: Node.js project)
+- task: NodeTool@0
+  inputs:
+    versionSpec: '20.x'
+  displayName: 'Use Node.js 20.x'
+
+- script: npm install
+  displayName: 'Install dependencies'
+
+# Step 3: Run linter
+#- script: npm run lint
+#  displayName: 'Run lint'
+
+# Step 4: Build project
+- script: npm run build
+  displayName: 'Build project'
+
+- task: CopyFiles@2
+  inputs:
+    contents: '**' # Copies all files and subfolders from the source
+    sourceFolder: '$(System.DefaultWorkingDirectory)/dist' # Path to your dist folder
+    targetFolder: '$(Build.ArtifactStagingDirectory)'
+  displayName: 'Copy dist files to artifact staging directory'
+
+# Step 5: Publish build artifacts
+- task: PublishBuildArtifacts@1
+  inputs:
+    pathToPublish: '$(Build.ArtifactStagingDirectory)'
+    artifactName: 'drop'
+    publishLocation: 'Container'
