@@ -9,7 +9,7 @@ export function useNetworkStatus() {
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state: NetInfoState) => {
       const wasConnected = isConnected;
-      const nowConnected = state.isConnected && state.isInternetReachable;
+      const nowConnected = state.isConnected;
       
       setIsConnected(state.isConnected);
       setIsInternetReachable(state.isInternetReachable);
@@ -26,6 +26,7 @@ export function useNetworkStatus() {
 
     // Initial check
     NetInfo.fetch().then((state) => {
+      console.log('[Network] Initial state:', state.isConnected, state.isInternetReachable);
       setIsConnected(state.isConnected);
       setIsInternetReachable(state.isInternetReachable);
     });
@@ -34,22 +35,33 @@ export function useNetworkStatus() {
   }, [isConnected]);
 
   const checkConnection = useCallback(async (): Promise<boolean> => {
-    const state = await NetInfo.fetch();
-    const connected = state.isConnected && state.isInternetReachable;
-    
-    if (!connected) {
-      Alert.alert(
-        'No Internet Connection',
-        'Please check your network settings and try again.',
-        [{ text: 'OK' }]
-      );
+    try {
+      const state = await NetInfo.fetch();
+      console.log('[Network] Check connection:', state.isConnected, state.isInternetReachable);
+      
+      // Be more lenient - only check isConnected, not isInternetReachable
+      // as isInternetReachable can be null or false even when connected
+      const connected = state.isConnected;
+      
+      if (!connected) {
+        Alert.alert(
+          'No Internet Connection',
+          'Please check your network settings and try again.',
+          [{ text: 'OK' }]
+        );
+        return false;
+      }
+      
+      return true;
+    } catch (error) {
+      console.log('[Network] Error checking connection:', error);
+      // If there's an error checking, assume we're connected and let the API call fail naturally
+      return true;
     }
-    
-    return connected ?? false;
   }, []);
 
   return {
-    isConnected: isConnected && isInternetReachable,
+    isConnected: isConnected ?? true,
     checkConnection,
   };
 }
