@@ -11,7 +11,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
-  Modal,
+  ActionSheetIOS,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
@@ -57,7 +57,6 @@ export default function EditProductScreen() {
   const [product, setProduct] = useState<Product | null>(null);
   const [imageUri, setImageUri] = useState<string | null>(null);
   const [hasNewImage, setHasNewImage] = useState(false);
-  const [showImagePicker, setShowImagePicker] = useState(false);
 
   const {
     control,
@@ -134,70 +133,100 @@ export default function EditProductScreen() {
     }
   };
 
-  const handleImagePickerOption = () => {
-    setShowImagePicker(true);
-  };
-
-  const pickImageFromGallery = async () => {
-    setShowImagePicker(false);
-    
-    try {
-      const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      
-      if (!permissionResult.granted) {
-        Alert.alert('Permission Required', 'Please allow access to your photo library in Settings');
-        return;
-      }
-
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
-        quality: 0.8,
-      });
-
-      console.log('Gallery result:', result);
-
-      if (!result.canceled && result.assets && result.assets[0]) {
-        setImageUri(result.assets[0].uri);
-        setHasNewImage(true);
-        console.log('Image selected:', result.assets[0].uri);
-      }
-    } catch (error) {
-      console.error('Error picking image from gallery:', error);
-      Alert.alert('Error', 'Failed to pick image from gallery');
+  // Use native OS image picker - shows default action sheet on iOS, dialog on Android
+  const showImagePickerOptions = () => {
+    if (Platform.OS === 'ios') {
+      // Use native iOS ActionSheet
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          options: ['Cancel', 'Take Photo', 'Choose from Library'],
+          cancelButtonIndex: 0,
+          title: 'Change Product Image',
+        },
+        async (buttonIndex) => {
+          if (buttonIndex === 1) {
+            await takePhoto();
+          } else if (buttonIndex === 2) {
+            await pickFromGallery();
+          }
+        }
+      );
+    } else {
+      // For Android, use Alert with buttons
+      Alert.alert(
+        'Change Product Image',
+        'Choose an option',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Take Photo', onPress: takePhoto },
+          { text: 'Choose from Library', onPress: pickFromGallery },
+        ],
+        { cancelable: true }
+      );
     }
   };
 
-  const takePhotoWithCamera = async () => {
-    setShowImagePicker(false);
-    
+  const takePhoto = async () => {
     try {
       // Request camera permission
-      const cameraPermission = await ImagePicker.requestCameraPermissionsAsync();
+      const { status } = await ImagePicker.requestCameraPermissionsAsync();
       
-      if (!cameraPermission.granted) {
-        Alert.alert('Permission Required', 'Please allow access to your camera in Settings');
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Camera access is required to take photos. Please enable it in your device settings.',
+          [{ text: 'OK' }]
+        );
         return;
       }
 
-      // Launch camera using ImagePicker (more reliable than expo-camera)
+      // Launch native camera - uses default OS camera UI
       const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
         allowsEditing: true,
         aspect: [1, 1],
         quality: 0.8,
       });
 
-      console.log('Camera result:', result);
-
-      if (!result.canceled && result.assets && result.assets[0]) {
+      if (!result.canceled && result.assets && result.assets.length > 0) {
         setImageUri(result.assets[0].uri);
         setHasNewImage(true);
-        console.log('Photo taken:', result.assets[0].uri);
       }
     } catch (error) {
-      console.error('Error taking photo:', error);
-      Alert.alert('Error', 'Failed to take photo. Please try again.');
+      console.error('Camera error:', error);
+      Alert.alert('Error', 'Failed to open camera. Please try again.');
+    }
+  };
+
+  const pickFromGallery = async () => {
+    try {
+      // Request media library permission
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission Required',
+          'Photo library access is required to select images. Please enable it in your device settings.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+
+      // Launch native photo picker - uses default OS gallery UI
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.8,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        setImageUri(result.assets[0].uri);
+        setHasNewImage(true);
+      }
+    } catch (error) {
+      console.error('Gallery error:', error);
+      Alert.alert('Error', 'Failed to open gallery. Please try again.');
     }
   };
 
@@ -302,10 +331,10 @@ export default function EditProductScreen() {
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Image Picker */}
+          {/* Image Picker - Uses Native OS UI */}
           <TouchableOpacity 
             style={styles.imagePicker} 
-            onPress={handleImagePickerOption}
+            onPress={showImagePickerOptions}
             activeOpacity={0.7}
           >
             {imageUri ? (
@@ -395,66 +424,6 @@ export default function EditProductScreen() {
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
-
-      {/* Image Picker Bottom Sheet Modal */}
-      <Modal
-        visible={showImagePicker}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setShowImagePicker(false)}
-      >
-        <TouchableOpacity 
-          style={styles.modalOverlay}
-          activeOpacity={1}
-          onPress={() => setShowImagePicker(false)}
-        >
-          <TouchableOpacity 
-            style={styles.modalContent}
-            activeOpacity={1}
-            onPress={() => {}}
-          >
-            <View style={styles.modalHandle} />
-            <Text style={styles.modalTitle}>Change Product Image</Text>
-            
-            <TouchableOpacity 
-              style={styles.modalOption} 
-              onPress={takePhotoWithCamera}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.modalOptionIcon, { backgroundColor: '#DBEAFE' }]}>
-                <Text style={styles.modalOptionEmoji}>📸</Text>
-              </View>
-              <View style={styles.modalOptionText}>
-                <Text style={styles.modalOptionTitle}>Take Photo</Text>
-                <Text style={styles.modalOptionSubtitle}>Use your camera to capture a new image</Text>
-              </View>
-              <Text style={styles.modalArrow}>›</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.modalOption} 
-              onPress={pickImageFromGallery}
-              activeOpacity={0.7}
-            >
-              <View style={[styles.modalOptionIcon, { backgroundColor: '#D1FAE5' }]}>
-                <Text style={styles.modalOptionEmoji}>🖼️</Text>
-              </View>
-              <View style={styles.modalOptionText}>
-                <Text style={styles.modalOptionTitle}>Choose from Gallery</Text>
-                <Text style={styles.modalOptionSubtitle}>Select an existing photo from your device</Text>
-              </View>
-              <Text style={styles.modalArrow}>›</Text>
-            </TouchableOpacity>
-            
-            <TouchableOpacity 
-              style={styles.modalCancelBtn}
-              onPress={() => setShowImagePicker(false)}
-            >
-              <Text style={styles.modalCancelText}>Cancel</Text>
-            </TouchableOpacity>
-          </TouchableOpacity>
-        </TouchableOpacity>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -639,82 +608,5 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontSize: 16,
     fontWeight: '600',
-  },
-  // Modal styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'flex-end',
-  },
-  modalContent: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    padding: 20,
-    paddingBottom: 40,
-  },
-  modalHandle: {
-    width: 40,
-    height: 4,
-    backgroundColor: '#E5E7EB',
-    borderRadius: 2,
-    alignSelf: 'center',
-    marginBottom: 20,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#111827',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  modalOption: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    marginBottom: 12,
-  },
-  modalOptionIcon: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 14,
-  },
-  modalOptionEmoji: {
-    fontSize: 24,
-  },
-  modalOptionText: {
-    flex: 1,
-  },
-  modalOptionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#111827',
-    marginBottom: 2,
-  },
-  modalOptionSubtitle: {
-    fontSize: 13,
-    color: '#6B7280',
-  },
-  modalArrow: {
-    fontSize: 24,
-    color: '#9CA3AF',
-    marginLeft: 8,
-  },
-  modalCancelBtn: {
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-    backgroundColor: '#F3F4F6',
-    borderRadius: 12,
-  },
-  modalCancelText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#6B7280',
   },
 });
