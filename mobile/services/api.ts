@@ -1,7 +1,10 @@
 import axios, { AxiosError, InternalAxiosRequestConfig } from 'axios';
 import * as SecureStore from 'expo-secure-store';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://api.catchorama.com/api/v1';
+// Hardcode the API URL to ensure it works across all environments
+const API_URL = 'https://api.catchorama.com/api/v1';
+
+console.log('[API] Base URL:', API_URL);
 
 // Create axios instance
 const api = axios.create({
